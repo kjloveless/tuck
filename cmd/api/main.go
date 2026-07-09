@@ -10,6 +10,8 @@ import (
 	"os"
 	"time"
 
+	"tuck.loveless.dev/internal/data"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -42,6 +44,7 @@ type config struct {
 type application struct {
 	config	config
 	logger	*slog.Logger
+	models	data.Models
 }
 
 func main() {
@@ -75,10 +78,11 @@ func main() {
 	logger.Info("database connection pool established")
 
 	// declare an instance of the application struct, containing the config
-	// struct and the logger
+	// struct, logger, and models
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	// declare a http server which listens on the port provided in the config
@@ -127,6 +131,7 @@ func openDB(cfg config) (*sql.DB, error) {
 		db.Close()
 		return nil, err
 	}
+
 
 	//wal mode allows reads to continue while a write is taking place. the
 	//setting is persistent for this database file, so it does not need to be

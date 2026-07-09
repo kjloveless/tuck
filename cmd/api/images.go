@@ -39,7 +39,19 @@ func (app *application) storeImageHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	fmt.Fprintf(w, "%+v\n", input)
+	image, err = app.models.Images.Insert(image)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("/v1/images/%d", image.ID))
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"image": image}, headers)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
 
 // add a showImageHandler for the "GET /v1/images/:id" endpoint. for now, we
