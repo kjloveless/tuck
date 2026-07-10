@@ -1,9 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"tuck.loveless.dev/internal/data"
 	"tuck.loveless.dev/internal/validator"
@@ -64,13 +64,15 @@ func (app *application) showImageHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	image := data.Image{
-		ID:					id,
-		CreatedAt:	time.Now(),
-		Location:		"Mexico",
-		Year:				2020,
-		People:			[]string{"Kyle", "Ralitsa"},
-		Version: 1,
+	image, err := app.models.Images.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
 	}
 
 	// encode the struct to json and send it as the http response

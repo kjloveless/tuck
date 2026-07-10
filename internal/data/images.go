@@ -2,6 +2,8 @@ package data
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 	"encoding/json"
 
@@ -48,7 +50,41 @@ func (i ImageModel) Insert(image Image) (Image, error) {
 }
 
 func (i ImageModel) Get(id int) (Image, error) {
-	return Image{}, nil
+	if id < 1 {
+		return Image{}, ErrRecordNotFound
+	}
+
+	query := `
+		SELECT id, created_at, location, year, people, version
+		FROM images
+		WHERE id = ?`
+
+	var image Image
+	var peopleJSON []byte
+
+	err := i.DB.QueryRow(query, id).Scan(
+		&image.ID,
+		&image.CreatedAt,
+		&image.Location,
+		&image.Year,
+		&peopleJSON,
+		&image.Version)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return Image{}, ErrRecordNotFound
+		default:
+			return Image{}, err
+		}
+	}
+
+	err = json.Unmarshal(peopleJSON, &image.People)
+	if err != nil {
+		return Image{}, fmt.Errorf("decoding people for image: %d: %w", image.ID, err)
+	}
+
+	return image, nil
 }
 
 func (i ImageModel) Update(image Image) (Image, error) {
