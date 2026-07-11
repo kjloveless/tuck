@@ -81,3 +81,56 @@ func (app *application) showImageHandler(w http.ResponseWriter, r *http.Request)
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) updateImageHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	image, err := app.models.Images.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	var input struct {
+		Location 	string 		`json:"location"`
+		Year			int				`json:"year"`
+		People		[]string	`json:"people"`
+	}
+
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	image.Location = input.Location
+	image.Year = input.Year
+	image.People = input.People
+
+	v := validator.New()
+
+	if data.ValidateImage(v, image); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	image, err = app.models.Images.Update(image)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"image": image}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

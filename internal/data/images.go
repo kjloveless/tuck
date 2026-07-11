@@ -88,7 +88,26 @@ func (i ImageModel) Get(id int) (Image, error) {
 }
 
 func (i ImageModel) Update(image Image) (Image, error) {
-	return Image{}, nil
+	query := `
+		UPDATE images
+		SET location = ?, year = ?, people = ?, version = version + 1
+		WHERE id = ?
+		RETURNING version`
+
+	people, err := json.Marshal(image.People)
+	if err != nil {
+		return Image{}, fmt.Errorf("marshaling people for imagee: %d: %w", image.ID, err)
+	}
+
+	args := []any{
+		image.Location,
+		image.Year,
+		string(people),
+		image.ID,
+	}
+
+	err = i.DB.QueryRow(query, args...).Scan(&image.Version)
+	return image, err
 }
 
 func (i ImageModel) Delete(id int) error {
