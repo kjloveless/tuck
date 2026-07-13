@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -43,8 +44,11 @@ func (i ImageModel) Insert(image Image) (Image, error) {
 	// declaring this slice immediately next to our sql query helps to make it
 	// nice and clear *what values are being used where* in the query
 	args :=[]any{image.Location, image.Year, string(people)}
+	
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-	err = i.DB.QueryRow(query, args...).Scan(&image.ID, &image.CreatedAt, &image.Version)
+	err = i.DB.QueryRowContext(ctx, query, args...).Scan(&image.ID, &image.CreatedAt, &image.Version)
 
 	return image, err
 }
@@ -62,7 +66,10 @@ func (i ImageModel) Get(id int) (Image, error) {
 	var image Image
 	var peopleJSON []byte
 
-	err := i.DB.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := i.DB.QueryRowContext(ctx, query, id).Scan(
 		&image.ID,
 		&image.CreatedAt,
 		&image.Location,
@@ -107,7 +114,10 @@ func (i ImageModel) Update(image Image) (Image, error) {
 		image.Version,
 	}
 
-	err = i.DB.QueryRow(query, args...).Scan(&image.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err = i.DB.QueryRowContext(ctx, query, args...).Scan(&image.Version)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -129,7 +139,10 @@ func (i ImageModel) Delete(id int) error {
 		DELETE FROM images
 		WHERE id = ?`
 
-	result, err := i.DB.Exec(query, id)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := i.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
