@@ -101,8 +101,8 @@ func (app *application) updateImageHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	var input struct {
-		Location 	string 		`json:"location"`
-		Year			int				`json:"year"`
+		Location 	*string 		`json:"location"`
+		Year			*int				`json:"year"`
 		People		[]string	`json:"people"`
 	}
 
@@ -112,9 +112,17 @@ func (app *application) updateImageHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	image.Location = input.Location
-	image.Year = input.Year
-	image.People = input.People
+	if input.Location != nil {
+		image.Location = *input.Location
+	}
+
+	if input.Year != nil {
+		image.Year = *input.Year
+	}
+
+	if input.People != nil {
+		image.People = input.People
+	}
 
 	v := validator.New()
 
@@ -125,7 +133,12 @@ func (app *application) updateImageHandler(w http.ResponseWriter, r *http.Reques
 
 	image, err = app.models.Images.Update(image)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 

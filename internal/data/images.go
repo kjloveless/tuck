@@ -91,7 +91,7 @@ func (i ImageModel) Update(image Image) (Image, error) {
 	query := `
 		UPDATE images
 		SET location = ?, year = ?, people = ?, version = version + 1
-		WHERE id = ?
+		WHERE id = ? AND version = ?
 		RETURNING version`
 
 	people, err := json.Marshal(image.People)
@@ -104,10 +104,20 @@ func (i ImageModel) Update(image Image) (Image, error) {
 		image.Year,
 		string(people),
 		image.ID,
+		image.Version,
 	}
 
 	err = i.DB.QueryRow(query, args...).Scan(&image.Version)
-	return image, err
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return Image{}, ErrEditConflict
+		default:
+			return Image{}, err
+		}
+	}
+
+	return image, nil
 }
 
 func (i ImageModel) Delete(id int) error {
