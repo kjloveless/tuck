@@ -111,6 +111,28 @@ func (i ImageModel) Update(image Image) (Image, error) {
 }
 
 func (i ImageModel) Delete(id int) error {
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+
+	query := `
+		DELETE FROM images
+		WHERE id = ?`
+
+	result, err := i.DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
 	return nil
 }
 
@@ -121,3 +143,4 @@ func ValidateImage(v *validator.Validator, image Image) {
 
 	v.Check(validator.Unique(image.People), "people", "must not contain duplicate values")
 }
+
