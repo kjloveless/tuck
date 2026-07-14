@@ -167,3 +167,46 @@ func ValidateImage(v *validator.Validator, image Image) {
 	v.Check(validator.Unique(image.People), "people", "must not contain duplicate values")
 }
 
+func (i ImageModel) GetAll(location string, people []string, filters Filters) ([]Image, error) {
+	query := `
+		SELECT id, created_at, location, year, people, version
+		FROM images
+		ORDER BY id`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := i.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	images := []Image{}
+
+	for rows.Next() {
+		var image Image
+		var peopleJSON []byte
+
+		err := rows.Scan(
+			&image.ID,
+			&image.CreatedAt,
+			&image.Location,
+			&image.Year,
+			&peopleJSON,
+			&image.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		images = append(images, image)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return images, nil
+}

@@ -197,5 +197,14 @@ func (app *application) listImagesHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	fmt.Fprintf(w, "%+v\n", input)
+	images, err := app.models.Images.GetAll(input.Location, input.People, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"images": images}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
