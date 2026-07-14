@@ -171,3 +171,32 @@ func (app *application) deleteImageHandler(w http.ResponseWriter, r *http.Reques
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) listImagesHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Location	string
+		People		[]string
+		Page			int
+		PageSize	int
+		Sort			string
+	}
+
+	v := validator.New()
+
+	qs := r.URL.Query()
+
+	input.Location = app.readString(qs, "location", "")
+	input.People = app.readCSV(qs, "people", []string{})
+
+	input.Page = app.readInt(qs, "page", 1, v)
+	input.PageSize = app.readInt(qs, "page_size", 20, v)
+
+	input.Sort = app.readString(qs, "sort", "id")
+
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	fmt.Fprintf(w, "%+v\n", input)
+}

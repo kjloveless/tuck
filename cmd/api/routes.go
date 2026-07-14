@@ -13,6 +13,8 @@ func (app *application) routes() http.Handler {
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
 	router.HandlerFunc(http.MethodGet, 		"/v1/healthcheck", 	app.healthcheckHandler)
+
+	router.HandlerFunc(http.MethodGet,		"/v1/images",				app.listImagesHandler)
 	router.HandlerFunc(http.MethodPost, 	"/v1/images", 			app.storeImageHandler)
 	router.HandlerFunc(http.MethodGet, 		"/v1/images/:id", 	app.showImageHandler)
 	router.HandlerFunc(http.MethodPatch, 	"/v1/images/:id", 	app.updateImageHandler)
