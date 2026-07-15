@@ -171,12 +171,26 @@ func (i ImageModel) GetAll(location string, people []string, filters Filters) ([
 	query := `
 		SELECT id, created_at, location, year, people, version
 		FROM images
+		WHERE (LOWER(location) = LOWER(?1) OR ?1 = '')
+		AND (json_array_length(?2) = 0
+			OR NOT EXISTS (
+				SELECT 1
+				FROM json_each(?2) AS requested
+				WHERE NOT EXISTS (
+					SELECT 1
+					FROM json_each(images.people) AS stored
+					WHERE stored.value = requested.value)))
 		ORDER BY id`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := i.DB.QueryContext(ctx, query)
+	peopleJSON, err := json.Marshal(people)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := i.DB.QueryContext(ctx, query, location, peopleJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -197,6 +211,11 @@ func (i ImageModel) GetAll(location string, people []string, filters Filters) ([
 			&peopleJSON,
 			&image.Version,
 		)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal(peopleJSON, &image.People)
 		if err != nil {
 			return nil, err
 		}
