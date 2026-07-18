@@ -169,18 +169,34 @@ func ValidateImage(v *validator.Validator, image Image) {
 
 func (i ImageModel) GetAll(location string, people []string, filters Filters) ([]Image, error) {
 	query := `
-		SELECT id, created_at, location, year, people, version
-		FROM images
-		WHERE (LOWER(location) = LOWER(?1) OR ?1 = '')
-		AND (json_array_length(?2) = 0
-			OR NOT EXISTS (
-				SELECT 1
-				FROM json_each(?2) AS requested
-				WHERE NOT EXISTS (
-					SELECT 1
-					FROM json_each(images.people) AS stored
-					WHERE stored.value = requested.value)))
-		ORDER BY id`
+	SELECT 
+		i.id, 
+		i.created_at, 
+		i.location, 
+		i.year, 
+		i.people, 
+		i.version
+	FROM images AS i
+	WHERE (
+		?1 = ''
+		OR EXISTS (
+			SELECT 1
+			FROM images_fts
+			WHERE images_fts.rowid = i.id
+			AND images_fts MATCH ?1
+		)
+	)
+	AND NOT EXISTS (
+		SELECT 1
+		FROM json_each(?2) AS requested
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM person AS p
+			WHERE p.image_id = i.id
+			AND p.name = requested.value
+		)
+	)
+	ORDER BY id`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
