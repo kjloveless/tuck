@@ -1,6 +1,9 @@
 package data
 
 import (
+	"slices"
+	"strings"
+
 	"tuck.loveless.dev/internal/validator"
 )
 
@@ -9,6 +12,22 @@ type Filters struct {
 	PageSize			int
 	Sort					string
 	SortSafelist	[]string
+}
+
+func (f Filters) sortColumn() string {
+	if slices.Contains(f.SortSafelist, f.Sort) {
+		return strings.TrimPrefix(f.Sort, "-")
+	}
+
+	panic("unsafe sort parameter: " + f.Sort)
+}
+
+func (f Filters) sortDirection() string {
+	if strings.HasPrefix(f.Sort, "-") {
+		return "DESC"
+	}
+
+	return "ASC"
 }
 
 func ValidateFilters(v *validator.Validator, f Filters) {

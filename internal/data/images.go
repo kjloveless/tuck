@@ -168,7 +168,7 @@ func ValidateImage(v *validator.Validator, image Image) {
 }
 
 func (i ImageModel) GetAll(location string, people []string, filters Filters) ([]Image, error) {
-	query := `
+	query := fmt.Sprintf(`
 	SELECT 
 		i.id, 
 		i.created_at, 
@@ -196,7 +196,7 @@ func (i ImageModel) GetAll(location string, people []string, filters Filters) ([
 			AND p.name = requested.value
 		)
 	)
-	ORDER BY id`
+	ORDER BY %s %s, i.id ASC`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
