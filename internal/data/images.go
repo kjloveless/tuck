@@ -167,9 +167,10 @@ func ValidateImage(v *validator.Validator, image Image) {
 	v.Check(validator.Unique(image.People), "people", "must not contain duplicate values")
 }
 
-func (i ImageModel) GetAll(location string, people []string, filters Filters) ([]Image, error) {
+func (i ImageModel) GetAll(location string, people []string, filters Filters) ([]Image, Metadata, error) {
 	query := fmt.Sprintf(`
 	SELECT 
+		COUNT(*) OVER() AS total_count,
 		i.id, 
 		i.created_at, 
 		i.location, 
@@ -196,23 +197,27 @@ func (i ImageModel) GetAll(location string, people []string, filters Filters) ([
 			AND p.name = requested.value
 		)
 	)
-	ORDER BY %s %s, i.id ASC`, filters.sortColumn(), filters.sortDirection())
+	ORDER BY %s %s, i.id ASC
+	LIMIT ?3 OFFSET ?4`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	peopleJSON, err := json.Marshal(people)
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	rows, err := i.DB.QueryContext(ctx, query, location, peopleJSON)
+	args := []any{location, peopleJSON, filters.limit(), filters.offset()}
+
+	rows, err := i.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
 	defer rows.Close()
 
+	totalRecords := 0
 	images := []Image{}
 
 	for rows.Next() {
@@ -220,6 +225,7 @@ func (i ImageModel) GetAll(location string, people []string, filters Filters) ([
 		var peopleJSON []byte
 
 		err := rows.Scan(
+			&totalRecords,
 			&image.ID,
 			&image.CreatedAt,
 			&image.Location,
@@ -228,20 +234,22 @@ func (i ImageModel) GetAll(location string, people []string, filters Filters) ([
 			&image.Version,
 		)
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 
 		err = json.Unmarshal(peopleJSON, &image.People)
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 
 		images = append(images, image)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	return images, nil
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return images, metadata, nil
 }
