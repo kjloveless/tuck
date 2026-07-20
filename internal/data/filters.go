@@ -8,10 +8,10 @@ import (
 )
 
 type Filters struct {
-	Page					int
-	PageSize			int
-	Sort					string
-	SortSafelist	[]string
+	Page         int
+	PageSize     int
+	Sort         string
+	SortSafelist []string
 }
 
 func (f Filters) sortColumn() string {
@@ -48,11 +48,11 @@ func ValidateFilters(v *validator.Validator, f Filters) {
 }
 
 type Metadata struct {
-	CurrentPage		int `json:"current_page,omitzero"`
-	PageSize			int `json:"page_size,omitzero"`
-	FirstPage			int `json:"first_page,omitzero"`
-	LastPage			int `json:"last_page,omitzero"`
-	TotalRecords	int `json:"total_records,omitzero"`
+	CurrentPage  int `json:"current_page,omitzero"`
+	PageSize     int `json:"page_size,omitzero"`
+	FirstPage    int `json:"first_page,omitzero"`
+	LastPage     int `json:"last_page,omitzero"`
+	TotalRecords int `json:"total_records,omitzero"`
 }
 
 func calculateMetadata(totalRecords, page, pageSize int) Metadata {
@@ -61,10 +61,10 @@ func calculateMetadata(totalRecords, page, pageSize int) Metadata {
 	}
 
 	return Metadata{
-		CurrentPage: 	page,
-		PageSize:			pageSize,
-		FirstPage:		1,
-		LastPage:			(totalRecords + pageSize - 1) / pageSize,
-		TotalRecords:	totalRecords,
+		CurrentPage:  page,
+		PageSize:     pageSize,
+		FirstPage:    1,
+		LastPage:     (totalRecords + pageSize - 1) / pageSize,
+		TotalRecords: totalRecords,
 	}
 }

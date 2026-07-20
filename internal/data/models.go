@@ -9,7 +9,7 @@ import (
 // method when looking up an image that doesn't exist in our databse
 var (
 	ErrRecordNotFound = errors.New("record not found")
-	ErrEditConflict		= errors.New("edit conflict")
+	ErrEditConflict   = errors.New("edit conflict")
 )
 
 // create a models struct which wraps the ImageModel. we'll add other models to

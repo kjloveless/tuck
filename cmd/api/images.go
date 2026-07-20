@@ -13,12 +13,12 @@ import (
 // simply return a plain-text placeholder response/
 func (app *application) storeImageHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Location		string		`json:"location"`
-		Year				int				`json:"year"`
-		People			[]string	`json:"people"`
+		Location string   `json:"location"`
+		Year     int      `json:"year"`
+		People   []string `json:"people"`
 	}
 
-	err := app.readJSON(w, r, &input) 
+	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
@@ -26,8 +26,8 @@ func (app *application) storeImageHandler(w http.ResponseWriter, r *http.Request
 
 	image := data.Image{
 		Location: input.Location,
-		Year: 		input.Year,
-		People: 	input.People,
+		Year:     input.Year,
+		People:   input.People,
 	}
 
 	v := validator.New()
@@ -58,7 +58,7 @@ func (app *application) storeImageHandler(w http.ResponseWriter, r *http.Request
 // retrieve the interpolated "id" parameter from the curretn url and include it
 // in a placeholder response
 func (app *application) showImageHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := app.readIDParam(r)	
+	id, err := app.readIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
@@ -101,9 +101,9 @@ func (app *application) updateImageHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	var input struct {
-		Location 	*string 		`json:"location"`
-		Year			*int				`json:"year"`
-		People		[]string	`json:"people"`
+		Location *string  `json:"location"`
+		Year     *int     `json:"year"`
+		People   []string `json:"people"`
 	}
 
 	err = app.readJSON(w, r, &input)
@@ -174,8 +174,8 @@ func (app *application) deleteImageHandler(w http.ResponseWriter, r *http.Reques
 
 func (app *application) listImagesHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Location	string
-		People		[]string
+		Location string
+		People   []string
 		data.Filters
 	}
 

@@ -27,13 +27,13 @@ const version = "0.0.1"
 // etc...). we ill read in these configuration settings from command-line flags
 // when the application starts.
 type config struct {
-	port	int
-	env 	string
-	db 		struct {
-		dsn 					string
-		maxOpenConns	int
-		maxIdleConns	int
-		maxIdleTime		time.Duration
+	port int
+	env  string
+	db   struct {
+		dsn          string
+		maxOpenConns int
+		maxIdleConns int
+		maxIdleTime  time.Duration
 	}
 }
 
@@ -42,9 +42,9 @@ type config struct {
 // config struct and a logger, but it will grow to include a lot more as our
 // build progresses.
 type application struct {
-	config	config
-	logger	*slog.Logger
-	models	data.Models
+	config config
+	logger *slog.Logger
+	models data.Models
 }
 
 func main() {
@@ -87,15 +87,15 @@ func main() {
 
 	// declare a http server which listens on the port provided in the config
 	// struct, uses the httprouter instance returned by app.routes() as the
-	// server handler, has some sensible timeout settings, and writes any log 
+	// server handler, has some sensible timeout settings, and writes any log
 	// messages to the structured logger at Error level.
 	srv := &http.Server{
-		Addr:						fmt.Sprintf(":%d", cfg.port),
-		Handler:				app.routes(),
-		IdleTimeout:		time.Minute,
-		ReadTimeout:		5 * time.Second,
-		WriteTimeout: 	10 * time.Second,
-		ErrorLog:				slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		Addr:         fmt.Sprintf(":%d", cfg.port),
+		Handler:      app.routes(),
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 
 	// start the http server
@@ -131,7 +131,6 @@ func openDB(cfg config) (*sql.DB, error) {
 		db.Close()
 		return nil, err
 	}
-
 
 	//wal mode allows reads to continue while a write is taking place. the
 	//setting is persistent for this database file, so it does not need to be

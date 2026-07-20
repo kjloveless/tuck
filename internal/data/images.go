@@ -3,10 +3,10 @@ package data
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
-	"encoding/json"
 
 	"tuck.loveless.dev/internal/validator"
 
@@ -14,12 +14,12 @@ import (
 )
 
 type Image struct {
-	ID				int					`json:"id"`
-	CreatedAt	time.Time		`json:"-"`
-	Year			int					`json:"year,omitzero"`
-	Location	string			`json:"location,omitzero"`
-	People		[]string		`json:"people,omitempty"`
-	Version		int					`json:"version"`
+	ID        int       `json:"id"`
+	CreatedAt time.Time `json:"-"`
+	Year      int       `json:"year,omitzero"`
+	Location  string    `json:"location,omitzero"`
+	People    []string  `json:"people,omitempty"`
+	Version   int       `json:"version"`
 }
 
 // define a imagemodel struct type which wraps a sql.DB connection pool
@@ -43,8 +43,8 @@ func (i ImageModel) Insert(image Image) (Image, error) {
 	// create an args slice containing the values for the placeholder parameters.
 	// declaring this slice immediately next to our sql query helps to make it
 	// nice and clear *what values are being used where* in the query
-	args :=[]any{image.Location, image.Year, string(people)}
-	
+	args := []any{image.Location, image.Year, string(people)}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -151,7 +151,7 @@ func (i ImageModel) Delete(id int) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if rowsAffected == 0 {
 		return ErrRecordNotFound
 	}
