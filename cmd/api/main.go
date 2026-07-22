@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"tuck.loveless.dev/internal/data"
+	"tuck.loveless.dev/internal/mailer"
 
 	_ "modernc.org/sqlite"
 )
@@ -39,6 +40,13 @@ type config struct {
 		burst		int
 		enabled	bool
 	}
+	smtp struct {
+		host			string
+		port			int
+		username	string
+		password	string
+		sender		string
+	}
 }
 
 // define an application struct to hold the dependencies for our http handlers,
@@ -49,6 +57,7 @@ type application struct {
 	config config
 	logger *slog.Logger
 	models data.Models
+	mailer *mailer.Mailer
 }
 
 func main() {
@@ -70,6 +79,12 @@ func main() {
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "rate limiter max burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "enable rate limiter")
 
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "sandbox.smtp.mailtrap.io", "smtp host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 2525, "smtp port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "3d6b7435ce08c3", "smtp username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "20910f067fc163", "smtp password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "tuck <no-reply@tuck.loveless.dev>", "smtp sender")
+
 	flag.Parse()
 
 	// initialize a new structured logger which writes log entries to the
@@ -85,12 +100,19 @@ func main() {
 
 	logger.Info("database connection pool established")
 
+	mailer, err := mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
 	// declare an instance of the application struct, containing the config
 	// struct, logger, and models
 	app := &application{
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
+		mailer: mailer,
 	}
 
 	err = app.serve()
