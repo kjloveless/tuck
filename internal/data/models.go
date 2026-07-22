@@ -15,7 +15,8 @@ var (
 // create a models struct which wraps the ImageModel. we'll add other models to
 // this, like a UserModel and PermissionModel
 type Models struct {
-	Images ImageModel
+	Images 	ImageModel
+	Users		UserModel
 }
 
 // for ease of use, we also add a New() method which returns a Models struct
@@ -23,5 +24,6 @@ type Models struct {
 func NewModels(db *sql.DB) Models {
 	return Models{
 		Images: ImageModel{DB: db},
+		Users:	UserModel{DB: db},
 	}
 }
