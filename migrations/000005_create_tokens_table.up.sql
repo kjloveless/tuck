@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS tokens (
+  hash    BLOB    PRIMARY KEY NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expiry  TEXT    NOT NULL,
+  scope   TEXT    NOT NULL
+);

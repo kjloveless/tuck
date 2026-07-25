@@ -31,7 +31,18 @@ func (app *application) serve() error {
 
 		app.logger.Info("tucking in", "addr", srv.Addr, "signal", s.String())
 
-		shutdownError <- srv.Shutdown(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			shutdownError <- err
+		}
+
+		app.logger.Info("completing background tasks..", "addr", srv.Addr)
+
+		app.wg.Wait()
+		shutdownError <- nil
 	}()
 
 	app.logger.Info("waking tuck", "addr", srv.Addr, "env", app.config.env)

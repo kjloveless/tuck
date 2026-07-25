@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 
 	"tuck.loveless.dev/internal/data"
@@ -58,6 +59,7 @@ type application struct {
 	logger *slog.Logger
 	models data.Models
 	mailer *mailer.Mailer
+	wg		 sync.WaitGroup
 }
 
 func main() {

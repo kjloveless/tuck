@@ -16,6 +16,7 @@ var (
 // this, like a UserModel and PermissionModel
 type Models struct {
 	Images 	ImageModel
+	Tokens	TokenModel
 	Users		UserModel
 }
 
@@ -24,6 +25,7 @@ type Models struct {
 func NewModels(db *sql.DB) Models {
 	return Models{
 		Images: ImageModel{DB: db},
+		Tokens:	TokenModel{DB: db},
 		Users:	UserModel{DB: db},
 	}
 }

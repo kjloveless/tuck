@@ -165,7 +165,7 @@ func (app *application) readInt(qs url.Values, key string, defaultValue int, v *
 }
 
 func (app *application) background(fn func()) {
-	go func() {
+	app.wg.Go(func() {
 		defer func() {
 			pv := recover()
 			if pv != nil {
@@ -174,5 +174,5 @@ func (app *application) background(fn func()) {
 		}()
 
 		fn()
-	}()
+	})
 }
