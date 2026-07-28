@@ -14,11 +14,11 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
 
-	router.HandlerFunc(http.MethodGet, "/v1/images", app.requireActivatedUser(app.listImagesHandler))
-	router.HandlerFunc(http.MethodPost, "/v1/images", app.requireActivatedUser(app.storeImageHandler))
-	router.HandlerFunc(http.MethodGet, "/v1/images/:id", app.requireActivatedUser(app.showImageHandler))
-	router.HandlerFunc(http.MethodPatch, "/v1/images/:id", app.requireActivatedUser(app.updateImageHandler))
-	router.HandlerFunc(http.MethodDelete, "/v1/images/:id", app.requireActivatedUser(app.deleteImageHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/images", app.requirePermission("images:read", app.listImagesHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/images", app.requirePermission("images:write", app.storeImageHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/images/:id", app.requirePermission("images:read", app.showImageHandler))
+	router.HandlerFunc(http.MethodPatch, "/v1/images/:id", app.requirePermission("images:write", app.updateImageHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/images/:id", app.requirePermission("images:write", app.deleteImageHandler))
 
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUserHandler)
