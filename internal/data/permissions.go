@@ -3,6 +3,8 @@ package data
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"slices"
 	"time"
 )
@@ -53,4 +55,29 @@ func (m PermissionModel) GetAllForUser(userID int) (Permissions, error) {
 	}
 
 	return permissions, nil
+}
+
+func (m PermissionModel) AddForUser(userID int, codes ...string) error {
+	if len(codes) < 1 {
+		return nil
+	}
+
+	codesJSON, err := json.Marshal(codes)
+		if err != nil {
+		return err
+	}
+
+	query := `
+		INSERT INTO users_permissions
+			SELECT ?1, permissions.id
+			FROM permissions
+			WHERE permissions.code IN (
+				SELECT value
+				FROM json_each(?2))`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err = m.DB.ExecContext(ctx, query, userID, string(codesJSON))
+	return err
 }
