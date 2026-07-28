@@ -37,16 +37,16 @@ type config struct {
 		maxIdleTime  time.Duration
 	}
 	limiter struct {
-		rps			float64
-		burst		int
-		enabled	bool
+		rps     float64
+		burst   int
+		enabled bool
 	}
 	smtp struct {
-		host			string
-		port			int
-		username	string
-		password	string
-		sender		string
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
 	}
 }
 
@@ -59,7 +59,7 @@ type application struct {
 	logger *slog.Logger
 	models data.Models
 	mailer *mailer.Mailer
-	wg		 sync.WaitGroup
+	wg     sync.WaitGroup
 }
 
 func main() {

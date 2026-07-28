@@ -11,24 +11,24 @@ import (
 )
 
 const (
-	ScopeActivation 		= "activation"
+	ScopeActivation     = "activation"
 	ScopeAuthentication = "authentication"
 )
 
 type Token struct {
-	Plaintext	string		`json:"token"`
-	Hash			[]byte		`json:"-"`
-	UserID		int				`json:"-"`
-	Expiry		time.Time	`json:"expiry"`
-	Scope			string		`json:"-"`
+	Plaintext string    `json:"token"`
+	Hash      []byte    `json:"-"`
+	UserID    int       `json:"-"`
+	Expiry    time.Time `json:"expiry"`
+	Scope     string    `json:"-"`
 }
 
 func generateToken(userID int, ttl time.Duration, scope string) *Token {
 	token := &Token{
-		Plaintext: 	rand.Text(),
-		UserID:			userID,
-		Expiry:			time.Now().Add(ttl),
-		Scope:			scope,
+		Plaintext: rand.Text(),
+		UserID:    userID,
+		Expiry:    time.Now().Add(ttl),
+		Scope:     scope,
 	}
 
 	hash := sha256.Sum256([]byte(token.Plaintext))

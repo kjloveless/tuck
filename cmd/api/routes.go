@@ -14,11 +14,11 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
 
-	router.HandlerFunc(http.MethodGet, "/v1/images", app.listImagesHandler)
-	router.HandlerFunc(http.MethodPost, "/v1/images", app.storeImageHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/images/:id", app.showImageHandler)
-	router.HandlerFunc(http.MethodPatch, "/v1/images/:id", app.updateImageHandler)
-	router.HandlerFunc(http.MethodDelete, "/v1/images/:id", app.deleteImageHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/images", app.requireActivatedUser(app.listImagesHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/images", app.requireActivatedUser(app.storeImageHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/images/:id", app.requireActivatedUser(app.showImageHandler))
+	router.HandlerFunc(http.MethodPatch, "/v1/images/:id", app.requireActivatedUser(app.updateImageHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/images/:id", app.requireActivatedUser(app.deleteImageHandler))
 
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUserHandler)
