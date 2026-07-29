@@ -145,6 +145,7 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 	})
 }
 
+//lint:ignore U1000 middleware currently unused, but might be in the future...
 func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authenticatedUser, found := app.contextGetAuthenticatedUser(r)
@@ -221,15 +222,15 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 }
 
 type metricsResponseWriter struct {
-	wrapped				http.ResponseWriter
-	statusCode		int
-	headerWritten	bool
+	wrapped       http.ResponseWriter
+	statusCode    int
+	headerWritten bool
 }
 
 func newMetricsResponseWriter(w http.ResponseWriter) *metricsResponseWriter {
 	return &metricsResponseWriter{
-		wrapped:		w,
-		statusCode:	http.StatusOK,
+		wrapped:    w,
+		statusCode: http.StatusOK,
 	}
 }
 
@@ -257,10 +258,10 @@ func (mw *metricsResponseWriter) Unwrap() http.ResponseWriter {
 
 func (app *application) metrics(next http.Handler) http.Handler {
 	var (
-		totalRequestsReceived						= expvar.NewInt("total_requests_received")
-		totalResponsesSent							= expvar.NewInt("total_responses_sent")
+		totalRequestsReceived           = expvar.NewInt("total_requests_received")
+		totalResponsesSent              = expvar.NewInt("total_responses_sent")
 		totalProcessingTimeMicroseconds = expvar.NewInt("total_processing_time_μs")
-		totalResponsesSentByStatus			= expvar.NewMap("total_responses_sent_by_status")
+		totalResponsesSentByStatus      = expvar.NewMap("total_responses_sent_by_status")
 	)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -280,5 +281,3 @@ func (app *application) metrics(next http.Handler) http.Handler {
 		totalProcessingTimeMicroseconds.Add(duration)
 	})
 }
-
-

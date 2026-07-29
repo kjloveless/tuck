@@ -62,7 +62,7 @@ func (m PermissionModel) AddForUser(userID int, codes ...string) error {
 	}
 
 	codesJSON, err := json.Marshal(codes)
-		if err != nil {
+	if err != nil {
 		return err
 	}
 

@@ -1,3 +1,10 @@
+include .envrc
+
+#==============================================================================#
+# helpers
+#==============================================================================#
+
+
 .PHONY: help
 help:
 	@echo 'usage:'
@@ -7,10 +14,16 @@ help:
 confirm:
 	@echo -n 'are you sure? [y/N] ' && read ans && [ $${ans:-N} = y ]
 
+
+#==============================================================================#
+# development
+#==============================================================================#
+
+
 ## run/api: run the cmd/api application
 .PHONY: run/api
 run/api:
-	go run ./cmd/api
+	go run ./cmd/api -db-dsn=${TUCK_DB_DSN}
 
 ## db/sqlite3: connect to the database using sqlite3
 .PHONY: db/sqlite3
@@ -26,3 +39,40 @@ db/migrations/new:
 .PHONY: db/migrations/up
 db/migrations/up: confirm
 	migrate -path=./migrations -database='sqlite://data/tuck.db' up
+
+
+#==============================================================================#
+# quality control
+#==============================================================================#
+
+
+## tidy: tidy module dependencies, and format and modernize all .go files
+.PHONY: tidy
+tidy:
+	go mod tidy
+	go mod verify
+	go mod vendor
+	go fix ./...
+	go fmt ./...
+
+
+## audit: run quality control checks
+.PHONY: audit
+audit:
+	go mod tidy -diff
+	go mod verify
+	go vet ./...
+	go tool staticcheck ./...
+	go test -race -vet=off ./...
+
+
+#==============================================================================#
+# build
+#==============================================================================#
+
+
+## build/api: build the cmd/api application
+.PHONY: build/api
+build/api:
+	go build -ldflags='-s' -o=./bin/api ./cmd/api
+	GOOS=linux GOARCH=amd64 go build -ldflags='-s' -o=./bin/linux_amd64/api ./cmd/api

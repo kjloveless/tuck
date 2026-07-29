@@ -74,7 +74,7 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 5375, "api server port")
 	flag.StringVar(&cfg.env, "env", "development", "environment (development|staging|production)")
 
-	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("TUCK_DB_DSN"), "sqlite data source name")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "sqlite data source name")
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 50, "sqlite max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 50, "sqlite max idle connections")
 	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "sqlite max connection idle time")
