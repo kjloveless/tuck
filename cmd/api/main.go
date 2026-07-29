@@ -15,14 +15,14 @@ import (
 
 	"tuck.loveless.dev/internal/data"
 	"tuck.loveless.dev/internal/mailer"
+	"tuck.loveless.dev/internal/vcs"
 
 	_ "modernc.org/sqlite"
 )
 
-// declare a string containing the application version number. later we'll
-// generate this automatically at build time, but for now we'll just store the
-// version number as a hard-coded global constant
-const version = "0.0.1"
+var (
+	version = vcs.Version()
+)
 
 // define a config struct to hold all the configuration settings for our
 // application. for now, the only configuration settings will be the network
@@ -94,7 +94,14 @@ func main() {
 		return nil
 	})
 
+	displayVersion := flag.Bool("version", false, "display version and exit")
+
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("version:\t%s\n", version)
+		os.Exit(0)
+	}
 
 	// initialize a new structured logger which writes log entries to the
 	// standard out stream
