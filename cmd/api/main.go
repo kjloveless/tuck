@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,6 +49,9 @@ type config struct {
 		password string
 		sender   string
 	}
+	cors struct {
+		trustedOrigins []string
+	}
 }
 
 // define an application struct to hold the dependencies for our http handlers,
@@ -63,12 +67,8 @@ type application struct {
 }
 
 func main() {
-	// decalre an instance of the config struct
 	var cfg config
 
-	// read the value of the port and env command-line falgs into the config
-	// struct. we default to using the port number 5375 and the environment
-	// "development" if no corresponding flags are provided
 	flag.IntVar(&cfg.port, "port", 5375, "api server port")
 	flag.StringVar(&cfg.env, "env", "development", "environment (development|staging|production)")
 
@@ -86,6 +86,11 @@ func main() {
 	flag.StringVar(&cfg.smtp.username, "smtp-username", "3d6b7435ce08c3", "smtp username")
 	flag.StringVar(&cfg.smtp.password, "smtp-password", "20910f067fc163", "smtp password")
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "tuck <no-reply@tuck.loveless.dev>", "smtp sender")
+
+	flag.Func("cors-trusted-origins", "trusted CORS origins (space separated)", func(val string) error {
+		cfg.cors.trustedOrigins = strings.Fields(val)
+		return nil
+	})
 
 	flag.Parse()
 
