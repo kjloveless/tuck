@@ -21,9 +21,9 @@ confirm:
 
 
 ## run/api: run the cmd/api application
-.PHONY: run/api
-run/api:
-	go run ./cmd/api -db-dsn=${TUCK_DB_DSN}
+.PHONY: run/web
+run/web:
+	go run ./cmd/web -db-dsn=${TUCK_DB_DSN}
 
 ## db/sqlite3: connect to the database using sqlite3
 .PHONY: db/sqlite3
