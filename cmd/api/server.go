@@ -37,6 +37,7 @@ func (app *application) serve() error {
 		err := srv.Shutdown(ctx)
 		if err != nil {
 			shutdownError <- err
+			return
 		}
 
 		app.logger.Info("completing background tasks..", "addr", srv.Addr)

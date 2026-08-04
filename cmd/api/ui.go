@@ -7,13 +7,19 @@ import (
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	ts, err := template.ParseFiles("./ui/html/pages/home.tmpl")
+	files := []string{
+		"./ui/html/base.tmpl",
+		"./ui/html/partials/nav.tmpl",
+		"./ui/html/pages/home.tmpl",
+	}
+
+	ts, err := template.ParseFiles(files...)
 	if err != nil {
 		app.logger.Error(err.Error())
 		return
 	}
 	
-	err = ts.Execute(w, nil)
+	err = ts.ExecuteTemplate(w, "base", nil)
 	if err != nil {
 		app.logger.Error(err.Error())
 	}

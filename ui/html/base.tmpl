@@ -1,0 +1,27 @@
+{{define "base"}}
+<!doctype html>
+<html lang='en'>
+  <head>
+    <meta charset='utf-8'>
+    <title>{{template "title" .}} - tuck</title>
+    <link rel='stylesheet' href='/static/css/main.css'>
+    <link rel='shortcut icon' href='/static/img/favicon.ico'type='image/x-icon'>
+    <!-- statically link fonts eventually -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible&family=Atkinson+Hyperlegible+Mono:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <header>
+      <h1><a href='/'>tuck</a></h1>
+    </header>
+    {{template "nav" .}}
+    <main>
+      {{template "main" .}}
+    </main>
+    <footer>powered by <a href='https://go.dev/'>go</a></footer>
+    <!-- include javascript file -->
+    <script src='/static/js/main.js' type='text/javascript'></script>
+  </body>
+</html>
+{{end}}

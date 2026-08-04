@@ -9,9 +9,12 @@ import (
 
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
+	fileServer := http.FileServer(http.Dir("./ui/static"))
 
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
+
+	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
 
