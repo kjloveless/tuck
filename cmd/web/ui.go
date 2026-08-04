@@ -1,9 +1,11 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"html/template"
 	"net/http"
+
+	"tuck.loveless.dev/internal/data"
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -15,13 +17,13 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
-		app.logger.Error(err.Error())
+		app.serverErrorResponse(w, r, err)
 		return
 	}
-	
+
 	err = ts.ExecuteTemplate(w, "base", nil)
 	if err != nil {
-		app.logger.Error(err.Error())
+		app.serverErrorResponse(w, r, err)
 	}
 }
 
@@ -32,7 +34,33 @@ func (app *application) imageView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "display a specific image with ID %d...", id)
+	image, err := app.models.Images.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	files := []string{
+		"./ui/html/base.tmpl",
+		"./ui/html/partials/nav.tmpl",
+		"./ui/html/pages/view.tmpl",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "base", image)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }
 
 func (app *application) imageStore(w http.ResponseWriter, r *http.Request) {

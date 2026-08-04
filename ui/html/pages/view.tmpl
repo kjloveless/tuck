@@ -1,0 +1,14 @@
+{{define "title"}}tuck #{{.ID}}{{end}}
+
+{{define "main"}}
+  <div class='image'>
+    <div class='metadata'>
+      <strong>{{.Location}}</strong>
+      <span>#{{.ID}}</span>
+    </div>
+    <pre><code>{{.People}}</code></pre>
+    <div class='metadata'>
+      <time>Created: {{.CreatedAt}}</time>
+    </div>
+  </div>
+{{end}}

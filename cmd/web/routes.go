@@ -36,7 +36,6 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/images/:id", app.imageView)
 	router.HandlerFunc(http.MethodGet, "/images", app.imageStore)
 
-
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 
 	return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router)))))

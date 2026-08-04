@@ -141,8 +141,8 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 
 func (app *application) updateUserPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Password 				string `json:"password"`
-		TokenPlaintext	string `json:"token"`
+		Password       string `json:"password"`
+		TokenPlaintext string `json:"token"`
 	}
 
 	err := app.readJSON(w, r, &input)
