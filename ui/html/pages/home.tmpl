@@ -1,7 +1,23 @@
-
 {{define "title"}}home{{end}}
 
 {{define "main"}}
   <h2>latest images</h2>
-  <p>there's nothing to see here yet!</p>
+  {{if .Images}}
+  <table>
+    <tr>
+      <th>location</th>
+      <th>created</th>
+      <th>id</th>
+    </tr>
+    {{range .Images}}
+    <tr>
+      <td><a href='/images/{{.ID}}'>{{.Location}}</a></td>
+      <td>{{.CreatedAt}}</td>
+      <td>#{{.ID}}</td>
+    </tr>
+    {{end}}
+  </table>
+  {{else}}
+    <p>there's nothing to see here yet!</p>
+  {{end}}
 {{end}}

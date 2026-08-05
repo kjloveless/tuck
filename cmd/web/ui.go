@@ -2,29 +2,22 @@ package main
 
 import (
 	"errors"
-	"html/template"
 	"net/http"
 
 	"tuck.loveless.dev/internal/data"
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	files := []string{
-		"./ui/html/base.tmpl",
-		"./ui/html/partials/nav.tmpl",
-		"./ui/html/pages/home.tmpl",
-	}
-
-	ts, err := template.ParseFiles(files...)
+	images, _, err := app.models.Images.Latest()
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "base", nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-	}
+	data := app.newTemplateData(r)
+	data.Images = images
+
+	app.render(w, r, http.StatusOK, "home.tmpl",  data)
 }
 
 func (app *application) imageView(w http.ResponseWriter, r *http.Request) {
@@ -45,24 +38,14 @@ func (app *application) imageView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	files := []string{
-		"./ui/html/base.tmpl",
-		"./ui/html/partials/nav.tmpl",
-		"./ui/html/pages/view.tmpl",
-	}
+	data := app.newTemplateData(r)
+	data.Image = image
 
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
-	}
-
-	err = ts.ExecuteTemplate(w, "base", image)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-	}
+	app.render(w, r, http.StatusOK, "view.tmpl", data)
 }
 
 func (app *application) imageStore(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("display a form for storing a new image..."))
+	data := app.newTemplateData(r)
+
+	app.render(w, r, http.StatusOK, "store.tmpl", data)
 }

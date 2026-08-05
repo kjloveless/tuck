@@ -34,7 +34,7 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/", app.home)
 	router.HandlerFunc(http.MethodGet, "/images/:id", app.imageView)
-	router.HandlerFunc(http.MethodGet, "/images", app.imageStore)
+	router.HandlerFunc(http.MethodGet, "/image/store", app.imageStore)
 
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 

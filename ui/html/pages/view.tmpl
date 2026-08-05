@@ -1,6 +1,7 @@
-{{define "title"}}tuck #{{.ID}}{{end}}
+{{define "title"}}tuck #{{.Image.ID}}{{end}}
 
 {{define "main"}}
+  {{with .Image}}
   <div class='image'>
     <div class='metadata'>
       <strong>{{.Location}}</strong>
@@ -11,4 +12,5 @@
       <time>Created: {{.CreatedAt}}</time>
     </div>
   </div>
+  {{end}}
 {{end}}

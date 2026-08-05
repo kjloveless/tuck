@@ -19,7 +19,9 @@
     <main>
       {{template "main" .}}
     </main>
-    <footer>powered by <a href='https://go.dev/'>go</a></footer>
+    <footer>
+      powered by <a href='https://go.dev/'>go</a> in {{.CurrentYear}}
+    </footer>
     <!-- include javascript file -->
     <script src='/static/js/main.js' type='text/javascript'></script>
   </body>

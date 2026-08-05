@@ -1,0 +1,17 @@
+{{define "title"}}tuck a new image{{end}}
+
+{{define "main"}}
+<form action='/image/store' method='POST'>
+  <div>
+    <label>location:</label>
+    <input type='text' name='location'>
+  </div>
+  <div>
+    <label>year:<label>
+    <input type='number' name='year'>
+  </div>
+  <div>
+    <input type='submit' value='tuck image'>
+  </div>
+</form>
+{{end}}

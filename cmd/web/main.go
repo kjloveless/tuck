@@ -6,6 +6,7 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"os"
 	"runtime"
@@ -61,11 +62,12 @@ type config struct {
 // config struct and a logger, but it will grow to include a lot more as our
 // build progresses.
 type application struct {
-	config config
-	logger *slog.Logger
-	models data.Models
-	mailer *mailer.Mailer
-	wg     sync.WaitGroup
+	config 				config
+	logger 				*slog.Logger
+	models 				data.Models
+	mailer 				*mailer.Mailer
+	templateCache map[string]*template.Template
+	wg     				sync.WaitGroup
 }
 
 func main() {
@@ -116,6 +118,12 @@ func main() {
 
 	logger.Info("database connection pool established")
 
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
 	mailer, err := mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender)
 	if err != nil {
 		logger.Error(err.Error())
@@ -143,6 +151,7 @@ func main() {
 		logger: logger,
 		models: data.NewModels(db),
 		mailer: mailer,
+		templateCache: templateCache,
 	}
 
 	err = app.serve()

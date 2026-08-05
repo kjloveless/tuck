@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"tuck.loveless.dev/internal/validator"
 
@@ -175,4 +177,40 @@ func (app *application) background(fn func()) {
 
 		fn()
 	})
+}
+
+///-----------------------------------------------------------------------------
+func (app *application) render(
+	w http.ResponseWriter, 
+	r *http.Request, 
+	status int, 
+	page string, 
+	data templateData,
+) {
+	ts, ok := app.templateCache[page]
+	if !ok {
+		err := fmt.Errorf("the template %s does not exist", page)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	buf := new(bytes.Buffer)
+
+	err := ts.ExecuteTemplate(buf, "base", data)
+	if err != nil {
+		err = fmt.Errorf("zoinks! %s", err)
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	w.WriteHeader(status)
+
+	buf.WriteTo(w)
+}
+
+///-----------------------------------------------------------------------------
+func (app *application) newTemplateData(r *http.Request) templateData {
+	return templateData{
+		CurrentYear: time.Now().Year(),
+	}
 }
