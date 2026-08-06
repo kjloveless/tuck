@@ -2,11 +2,14 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"tuck.loveless.dev/internal/data"
 )
 
+///-----------------------------------------------------------------------------
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	images, _, err := app.models.Images.Latest()
 	if err != nil {
@@ -20,6 +23,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "home.tmpl",  data)
 }
 
+///-----------------------------------------------------------------------------
 func (app *application) imageView(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
@@ -44,8 +48,61 @@ func (app *application) imageView(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "view.tmpl", data)
 }
 
+///-----------------------------------------------------------------------------
 func (app *application) imageStore(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
 	app.render(w, r, http.StatusOK, "store.tmpl", data)
+}
+
+///-----------------------------------------------------------------------------
+func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	location := r.PostForm.Get("location")
+	year, err := strconv.Atoi(r.PostForm.Get("year"))
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	image := data.Image{
+		Location: location,
+		Year: year,
+		People: []string{"kyle"},
+	}
+
+	image, err = app.models.Images.Insert(image)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/images/%d", image.ID), http.StatusSeeOther)
+}
+
+///-----------------------------------------------------------------------------
+func (app *application) imageDelete(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	err = app.models.Images.Delete(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

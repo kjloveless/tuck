@@ -33,7 +33,7 @@ func (i ImageModel) Insert(image Image) (Image, error) {
 	// returns the system-generated data
 	query := `
 		INSERT INTO images (location, year, people)
-		VALUES ($1, ?, ?)
+		VALUES (?, ?, ?)
 		RETURNING id, created_at, version`
 
 	people, err := json.Marshal(image.People)
@@ -272,7 +272,7 @@ func (i ImageModel) Latest() ([]Image, Metadata, error) {
 			i.people, 
 			i.version
 		FROM images AS i
-		WHERE i.created_at < date('now')
+		WHERE i.created_at < datetime('now')
 		ORDER BY i.id DESC LIMIT 10`
 
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

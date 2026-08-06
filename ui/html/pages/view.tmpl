@@ -11,6 +11,9 @@
     <div class='metadata'>
       <time>Created: {{.CreatedAt}}</time>
     </div>
+    <form action="/images/{{.ID}}/delete" method="POST">
+      <button type="submit">delete?</button>
+    </form>
   </div>
   {{end}}
 {{end}}

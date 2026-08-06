@@ -35,6 +35,8 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/", app.home)
 	router.HandlerFunc(http.MethodGet, "/images/:id", app.imageView)
 	router.HandlerFunc(http.MethodGet, "/image/store", app.imageStore)
+	router.HandlerFunc(http.MethodPost, "/image/store", app.imageStorePost)
+	router.HandlerFunc(http.MethodPost, "/images/:id/delete", app.imageDelete)
 
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 
