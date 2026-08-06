@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"tuck.loveless.dev/internal/data"
 )
@@ -65,6 +66,7 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 
 	location := r.PostForm.Get("location")
 	year, err := strconv.Atoi(r.PostForm.Get("year"))
+	people := strings.Split(r.PostForm.Get("people"), "\r\n")
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -73,7 +75,7 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 	image := data.Image{
 		Location: location,
 		Year: year,
-		People: []string{"kyle"},
+		People: people,
 	}
 
 	image, err = app.models.Images.Insert(image)
