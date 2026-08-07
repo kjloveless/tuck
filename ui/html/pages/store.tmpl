@@ -3,6 +3,11 @@
 {{define "main"}}
 <form action='/image/store' method='POST'>
   <div>
+    <label for='images' class='file-button'>choose images</label>
+    <input type='file' id='images' name='images' accept='image/*' requried multiple hidden>
+    <div id='image-previews'></div>
+  </div>
+  <div>
     <label>location:</label>
     <input type='text' name='location'>
   </div>
@@ -18,4 +23,34 @@
     <input type='submit' value='tuck image'>
   </div>
 </form>
+
+<script>
+  const input = document.getElementById("images");
+  const previews = document.getElementById("image-previews");
+
+  let previewURLs = [];
+
+  input.addEventListener("change", () => {
+    for (const url of previewURLs) {
+      URL.revokeObjectURL(url);
+    }
+
+    previewURLs = [];
+    previews.replaceChildren();
+
+    
+    for (const file of input.files) {
+      const url = URL.createObjectURL(file);
+      previewURLs.push(url);
+
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = file.name;
+      img.style.maxWidth = '300px';
+      img.style.maxHeight = '300px';
+
+      previews.appendChild(img);
+    }
+  });
+</script>
 {{end}}
