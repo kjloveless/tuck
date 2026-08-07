@@ -62,12 +62,12 @@ type config struct {
 // config struct and a logger, but it will grow to include a lot more as our
 // build progresses.
 type application struct {
-	config 				config
-	logger 				*slog.Logger
-	models 				data.Models
-	mailer 				*mailer.Mailer
+	config        config
+	logger        *slog.Logger
+	models        data.Models
+	mailer        *mailer.Mailer
 	templateCache map[string]*template.Template
-	wg     				sync.WaitGroup
+	wg            sync.WaitGroup
 }
 
 func main() {
@@ -147,10 +147,10 @@ func main() {
 	// declare an instance of the application struct, containing the config
 	// struct, logger, and models
 	app := &application{
-		config: cfg,
-		logger: logger,
-		models: data.NewModels(db),
-		mailer: mailer,
+		config:        cfg,
+		logger:        logger,
+		models:        data.NewModels(db),
+		mailer:        mailer,
 		templateCache: templateCache,
 	}
 

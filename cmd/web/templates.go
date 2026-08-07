@@ -9,8 +9,8 @@ import (
 
 type templateData struct {
 	CurrentYear int
-	Image				data.Image
-	Images			[]data.Image
+	Image       data.Image
+	Images      []data.Image
 }
 
 func newTemplateCache() (map[string]*template.Template, error) {

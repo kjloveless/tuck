@@ -10,7 +10,7 @@ import (
 	"tuck.loveless.dev/internal/data"
 )
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	images, _, err := app.models.Images.Latest()
 	if err != nil {
@@ -21,10 +21,10 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	data.Images = images
 
-	app.render(w, r, http.StatusOK, "home.tmpl",  data)
+	app.render(w, r, http.StatusOK, "home.tmpl", data)
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (app *application) imageView(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
@@ -49,14 +49,14 @@ func (app *application) imageView(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "view.tmpl", data)
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (app *application) imageStore(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
 	app.render(w, r, http.StatusOK, "store.tmpl", data)
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -74,8 +74,8 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 
 	image := data.Image{
 		Location: location,
-		Year: year,
-		People: people,
+		Year:     year,
+		People:   people,
 	}
 
 	image, err = app.models.Images.Insert(image)
@@ -87,7 +87,7 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/images/%d", image.ID), http.StatusSeeOther)
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (app *application) imageDelete(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {

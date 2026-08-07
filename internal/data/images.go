@@ -27,7 +27,7 @@ type ImageModel struct {
 	DB *sql.DB
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (i ImageModel) Insert(image Image) (Image, error) {
 	// define a sql query which inserts a new record in the images table, and
 	// returns the system-generated data
@@ -54,7 +54,7 @@ func (i ImageModel) Insert(image Image) (Image, error) {
 	return image, err
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (i ImageModel) Get(id int) (Image, error) {
 	if id < 1 {
 		return Image{}, ErrRecordNotFound
@@ -96,7 +96,7 @@ func (i ImageModel) Get(id int) (Image, error) {
 	return image, nil
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (i ImageModel) Update(image Image) (Image, error) {
 	query := `
 		UPDATE images
@@ -133,7 +133,7 @@ func (i ImageModel) Update(image Image) (Image, error) {
 	return image, nil
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (i ImageModel) Delete(id int) error {
 	if id < 1 {
 		return ErrRecordNotFound
@@ -163,7 +163,7 @@ func (i ImageModel) Delete(id int) error {
 	return nil
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func ValidateImage(v *validator.Validator, image Image) {
 	v.Check(image.Year != 0, "year", "must be provdided")
 	v.Check(image.Year >= 1888, "year", "must be greater than 1888")
@@ -172,7 +172,7 @@ func ValidateImage(v *validator.Validator, image Image) {
 	v.Check(validator.Unique(image.People), "people", "must not contain duplicate values")
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (i ImageModel) GetAll(location string, people []string, filters Filters) ([]Image, Metadata, error) {
 	query := fmt.Sprintf(`
 	SELECT 
@@ -260,7 +260,7 @@ func (i ImageModel) GetAll(location string, people []string, filters Filters) ([
 	return images, metadata, nil
 }
 
-///-----------------------------------------------------------------------------
+// /-----------------------------------------------------------------------------
 func (i ImageModel) Latest() ([]Image, Metadata, error) {
 	query := `
 		SELECT 
@@ -275,49 +275,49 @@ func (i ImageModel) Latest() ([]Image, Metadata, error) {
 		WHERE i.created_at < datetime('now')
 		ORDER BY i.id DESC LIMIT 10`
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-		rows, err := i.DB.QueryContext(ctx, query, nil)
+	rows, err := i.DB.QueryContext(ctx, query, nil)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+
+	defer rows.Close()
+
+	totalRecords := 0
+	images := []Image{}
+
+	for rows.Next() {
+		var image Image
+		var peopleJSON []byte
+
+		err := rows.Scan(
+			&totalRecords,
+			&image.ID,
+			&image.CreatedAt,
+			&image.Location,
+			&image.Year,
+			&peopleJSON,
+			&image.Version,
+		)
 		if err != nil {
 			return nil, Metadata{}, err
 		}
 
-		defer rows.Close()
-
-		totalRecords := 0
-		images := []Image{}
-
-		for rows.Next() {
-			var image Image
-			var peopleJSON []byte
-
-			err := rows.Scan(
-				&totalRecords,
-				&image.ID,
-				&image.CreatedAt,
-				&image.Location,
-				&image.Year,
-				&peopleJSON,
-				&image.Version,
-			)
-			if err != nil {
-				return nil, Metadata{}, err
-			}
-
-			err = json.Unmarshal(peopleJSON, &image.People)
-			if err != nil {
-				return nil, Metadata{}, err
-			}
-
-			images = append(images, image)
-		}
-
-		if err = rows.Err(); err != nil {
+		err = json.Unmarshal(peopleJSON, &image.People)
+		if err != nil {
 			return nil, Metadata{}, err
 		}
 
-		metadata := calculateMetadata(totalRecords, 1, 10)
+		images = append(images, image)
+	}
 
-		return images, metadata, nil
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, 1, 10)
+
+	return images, metadata, nil
 }
