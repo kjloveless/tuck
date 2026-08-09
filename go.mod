@@ -3,7 +3,9 @@ module tuck.loveless.dev
 go 1.26.3
 
 require (
+	github.com/alexedwards/scs/v2 v2.9.0
 	github.com/julienschmidt/httprouter v1.3.0
+	github.com/justinas/alice v1.2.0
 	github.com/tomasen/realip v0.0.0-20180522021738-f0c99a92ddce
 	github.com/wneessen/go-mail v0.8.1
 	golang.org/x/crypto v0.54.0

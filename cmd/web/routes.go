@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/justinas/alice"
 )
 
 func (app *application) routes() http.Handler {
@@ -32,13 +33,24 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/activation", app.createActivationTokenHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/password-reset", app.createPasswordResetTokenHandler)
 
-	router.HandlerFunc(http.MethodGet, "/", app.home)
-	router.HandlerFunc(http.MethodGet, "/images/:id", app.imageView)
-	router.HandlerFunc(http.MethodGet, "/image/store", app.imageStore)
-	router.HandlerFunc(http.MethodPost, "/image/store", app.imageStorePost)
-	router.HandlerFunc(http.MethodPost, "/images/:id/delete", app.imageDelete)
+	dynamic := alice.New(app.sessionManager.LoadAndSave)
+
+	router.Handler(http.MethodGet, "/", dynamic.ThenFunc(app.home))
+	router.Handler(http.MethodGet, "/images/:id", dynamic.ThenFunc(app.imageView))
+	router.Handler(http.MethodGet, "/image/store", dynamic.ThenFunc(app.imageStore))
+	router.Handler(http.MethodPost, "/image/store", dynamic.ThenFunc(app.imageStorePost))
+	router.Handler(http.MethodPost, "/images/:id/delete", dynamic.ThenFunc(app.imageDelete))
+
+	router.Handler(http.MethodGet, "/user/signup", dynamic.ThenFunc(app.userSignup))
+	router.Handler(http.MethodPost, "/user/signup", dynamic.ThenFunc(app.userSignupPost))
+	router.Handler(http.MethodGet, "/user/login", dynamic.ThenFunc(app.userLogin))
+	router.Handler(http.MethodPost, "/user/login", dynamic.ThenFunc(app.userLoginPost))
+	router.Handler(http.MethodPost, "/user/logout", dynamic.ThenFunc(app.userLogoutPost))
+
+	standard := alice.New(app.metrics, app.recoverPanic, app.enableCORS, app.rateLimit)
 
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 
-	return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router)))))
+	return standard.Then(router)
+	//return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router)))))
 }

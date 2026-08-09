@@ -1,4 +1,4 @@
-{{define "title"}}tuck a new image{{end}}
+{{define "title"}}tuck an image{{end}}
 
 {{define "main"}}
 <form action='/image/store' method='POST'>
@@ -9,15 +9,24 @@
   </div>
   <div>
     <label>location:</label>
-    <input type='text' name='location'>
+    {{with .Form.FieldErrors.location}}
+      <label class='error'>{{.}}</label>
+    {{end}}
+    <input type='text' name='location' value='{{.Form.Location}}'>
   </div>
   <div>
     <label>year:</label>
-    <input type='number' name='year'>
+    {{with .Form.FieldErrors.year}}
+      <label class='error'>{{.}}</label>
+    {{end}}
+    <input type='number' name='year' value='{{.Form.Year}}'>
   </div>
   <div>
     <label>people (newline delimted):</label>
-    <textarea name='people'></textarea>
+    {{with .Form.FieldErrors.people}}
+      <label class='error'>{{.}}</label>
+    {{end}}
+    <textarea name='people'>{{.Form.People}}</textarea>
   </div>
   <div>
     <input type='submit' value='tuck image'>

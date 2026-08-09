@@ -18,6 +18,8 @@ import (
 	"tuck.loveless.dev/internal/mailer"
 	"tuck.loveless.dev/internal/vcs"
 
+	"github.com/alexedwards/scs/v2"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -62,12 +64,13 @@ type config struct {
 // config struct and a logger, but it will grow to include a lot more as our
 // build progresses.
 type application struct {
-	config        config
-	logger        *slog.Logger
-	models        data.Models
-	mailer        *mailer.Mailer
-	templateCache map[string]*template.Template
-	wg            sync.WaitGroup
+	config         config
+	logger         *slog.Logger
+	models         data.Models
+	mailer         *mailer.Mailer
+	sessionManager *scs.SessionManager
+	templateCache  map[string]*template.Template
+	wg             sync.WaitGroup
 }
 
 func main() {
@@ -144,14 +147,19 @@ func main() {
 		return time.Now().Unix()
 	}))
 
+	sessionManager := scs.New()
+	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.Cookie.Secure = true
+
 	// declare an instance of the application struct, containing the config
 	// struct, logger, and models
 	app := &application{
-		config:        cfg,
-		logger:        logger,
-		models:        data.NewModels(db),
-		mailer:        mailer,
-		templateCache: templateCache,
+		config:         cfg,
+		logger:         logger,
+		models:         data.NewModels(db),
+		mailer:         mailer,
+		sessionManager: sessionManager,
+		templateCache:  templateCache,
 	}
 
 	err = app.serve()

@@ -1,6 +1,15 @@
 {{define "nav"}}
 <nav>
-  <a href='/'>home</a>
-  <a href='/image/store'>tuck image</a>
+  <div>
+    <a href='/'>home</a>
+    <a href='/image/store'>tuck image</a>
+  </div>
+  <div>
+    <a href='/user/signup'>signup</a>
+    <a href='/user/login'>login</a>
+    <form action='/user/logout' method='POST'>
+      <button>logout</button>
+    </form>
+  </div>
 </nav>
 {{end}}
