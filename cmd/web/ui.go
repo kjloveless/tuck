@@ -181,18 +181,17 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		paths = append(paths, p)
-	}
+		image := data.Image{
+			Location: form.Location,
+			Year:     form.Year,
+			People:   form.People,
+		}
 
-	image := data.Image{
-		Location: form.Location,
-		Year:     form.Year,
-		People:   form.People,
-	}
-
-	image, err = app.models.Images.Insert(image)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
+		image, err = app.models.Images.Insert(image)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
 	}
 
 	app.sessionManager.Put(r.Context(), "flash", "imaged tucked!")
