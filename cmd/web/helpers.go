@@ -2,12 +2,17 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -214,4 +219,89 @@ func (app *application) newTemplateData(r *http.Request) templateData {
 		CurrentYear: time.Now().Year(),
 		Flash:       app.sessionManager.PopString(r.Context(), "flash"),
 	}
+}
+
+//------------------------------------------------------------------------------
+func sniff(fh *multipart.FileHeader) (string, error) {
+	f, err := fh.Open()
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	head := make([]byte, 512)
+	n, err := io.ReadFull(f, head)
+	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+		return "", err
+	}
+
+	ext, ok := allowedImageTypes[http.DetectContentType(head[:n])]
+	if !ok {
+		return "", errors.New("unsupported content type")
+	}
+	return ext, nil
+}
+
+//------------------------------------------------------------------------------
+func (app application) tmpDir() string {
+	return "./tmp/"
+}
+
+func (app application) dataDir() string {
+	return "./data/images/"
+}
+
+//------------------------------------------------------------------------------
+func (app *application) storeBlob(c candidate) (string, error) {
+	f, err := c.fh.Open()
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	tmp, err := os.CreateTemp(app.tmpDir(), "up-*")
+	if err != nil {
+		return "", err
+	}
+
+	committed := false
+	defer func() {
+		tmp.Close()
+		if !committed {
+			os.Remove(tmp.Name())
+		}
+	}()
+
+	h := sha256.New()
+	if _, err := io.Copy(io.MultiWriter(tmp, h), f); err != nil {
+		return "", err
+	}
+	if err := tmp.Close(); err != nil {
+		return "", err
+	}
+
+	sum := hex.EncodeToString(h.Sum(nil))
+	rel := filepath.Join(sum[:2], sum[2:4], sum+c.ext)
+	dst := filepath.Join(app.dataDir(), rel)
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return "", err
+	}
+	if err := os.Rename(tmp.Name(), dst); err != nil {
+		return "", err
+	}
+
+	committed = true
+	return rel, nil
+}
+
+//------------------------------------------------------------------------------
+func splitLines(s string) []string {
+	var out []string
+	for _, line := range strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			out = append(out, line)
+		}
+	}
+	return out
 }

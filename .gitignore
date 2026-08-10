@@ -6,3 +6,5 @@ data/*.db-shm
 bin/
 vendor/
 tls/
+data/images/
+tmp/

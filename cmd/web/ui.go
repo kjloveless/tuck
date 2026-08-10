@@ -3,19 +3,42 @@ package main
 import (
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"tuck.loveless.dev/internal/data"
 )
 
+const (
+	maxUploadBytes 	= 256 << 20
+	maxImageBytes 	= 32 << 20
+	maxImages				= 20
+	memThreshold		= 10 << 20
+)
+
+var allowedImageTypes = map[string]string{
+	"image/jpeg": ".jpg",
+	"image/png":	".png",
+	"image/webp":	".webp",
+	"image/gif": 	".gif",
+}
+
 type imageStoreForm struct {
 	Location    string
+	YearRaw			string
 	Year        int
+	PeopleRaw		string
 	People      []string
 	FieldErrors map[string]string
+}
+
+type candidate struct {
+	fh 	*multipart.FileHeader
+	ext	string
 }
 
 type userSignupForm struct {
@@ -74,24 +97,27 @@ func (app *application) imageStore(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes)
+
+	form := imageStoreForm{ FieldErrors: map[string]string{} }
+	
+	if err := r.ParseMultipartForm(memThreshold); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			data := app.newTemplateData(r)
+			data.Form = form
+			form.FieldErrors["images"] = "those images are too large in total"
+			app.render(w, r, http.StatusUnprocessableEntity, "store.tmpl", data)
+			return
+		}
 		app.badRequestResponse(w, r, err)
 		return
 	}
 
-	year, err := strconv.Atoi(r.PostForm.Get("year"))
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
-	}
-
-	form := imageStoreForm{
-		Location:    r.PostForm.Get("location"),
-		Year:        year,
-		People:      strings.Split(r.PostForm.Get("people"), "\r\n"),
-		FieldErrors: map[string]string{},
-	}
+	form.Location 	= r.PostForm.Get("location")
+	form.YearRaw 		= strings.TrimSpace(r.PostForm.Get("year"))
+	form.PeopleRaw	= r.PostForm.Get("people")
+	form.People			= splitLines(form.PeopleRaw)
 
 	if strings.TrimSpace(form.Location) == "" {
 		form.FieldErrors["location"] = "this field cannot be blank"
@@ -99,12 +125,45 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 		form.FieldErrors["location"] = "this field cannot be more than 100 characters long"
 	}
 
-	if form.Year == 0 {
-		form.FieldErrors["year"] = "this field cannot be 0"
+	year, err := strconv.Atoi(form.YearRaw)
+	thisYear := time.Now().Year()
+
+	switch {
+	case form.YearRaw == "":
+		form.FieldErrors["year"] = "this field cannot be blank"
+	case err != nil:
+		form.FieldErrors["year"] = err.Error()
+	case year < 1826 || thisYear < year:
+		form.FieldErrors["year"] = fmt.Sprintf("this field must be between 1826 and %d", thisYear)
+	default:
+		form.Year = year
 	}
 
 	if len(form.People) < 1 || len(form.People) > 5 {
 		form.FieldErrors["people"] = "this field can only contain 1-5 lines"
+	}
+
+	files := r.MultipartForm.File["images"]
+	candidates := make([]candidate, 0, len(files))
+
+	switch {
+	case len(files) == 0:
+		form.FieldErrors["images"] = "choose at least one image"
+	case len(files) > maxImages:
+		form.FieldErrors["images"] = fmt.Sprintf("no more than %d images at a time", maxImages)
+	default:
+		for _, fh := range files {
+			if fh.Size > maxImageBytes {
+				form.FieldErrors["images"] = fmt.Sprintf("%q is too large", fh.Filename)
+				break
+			}
+			ext, err := sniff(fh)
+			if err != nil {
+				form.FieldErrors["images"] = fmt.Sprintf("%q is not a supported image", fh.Filename)
+				break
+			}
+			candidates = append(candidates, candidate{ fh: fh, ext: ext })
+		}
 	}
 
 	if len(form.FieldErrors) > 0 {
@@ -112,6 +171,16 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 		data.Form = form
 		app.render(w, r, http.StatusUnprocessableEntity, "store.tmpl", data)
 		return
+	}
+
+	paths := make([]string, 0, len(candidates))
+	for _, c := range candidates {
+		p, err := app.storeBlob(c)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+		paths = append(paths, p)
 	}
 
 	image := data.Image{
@@ -128,7 +197,7 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 
 	app.sessionManager.Put(r.Context(), "flash", "imaged tucked!")
 
-	http.Redirect(w, r, fmt.Sprintf("/images/%d", image.ID), http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // ------------------------------------------------------------------------------
