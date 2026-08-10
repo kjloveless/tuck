@@ -184,6 +184,7 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 		image := data.Image{
 			Location: form.Location,
 			Year:     form.Year,
+			Path:			p,
 			People:   form.People,
 		}
 

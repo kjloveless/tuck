@@ -18,6 +18,7 @@ type Image struct {
 	CreatedAt time.Time `json:"-"`
 	Year      int       `json:"year,omitzero"`
 	Location  string    `json:"location,omitzero"`
+	Path			string		`json:"path,omitzerpath,omitzeroo"`
 	People    []string  `json:"people,omitempty"`
 	Version   int       `json:"version"`
 }
@@ -32,8 +33,8 @@ func (i ImageModel) Insert(image Image) (Image, error) {
 	// define a sql query which inserts a new record in the images table, and
 	// returns the system-generated data
 	query := `
-		INSERT INTO images (location, year, people)
-		VALUES (?, ?, ?)
+		INSERT INTO images (location, year, path, people)
+		VALUES (?, ?, ?, ?)
 		RETURNING id, created_at, version`
 
 	people, err := json.Marshal(image.People)
@@ -44,7 +45,7 @@ func (i ImageModel) Insert(image Image) (Image, error) {
 	// create an args slice containing the values for the placeholder parameters.
 	// declaring this slice immediately next to our sql query helps to make it
 	// nice and clear *what values are being used where* in the query
-	args := []any{image.Location, image.Year, string(people)}
+	args := []any{image.Location, image.Year, image.Path, string(people)}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -61,7 +62,7 @@ func (i ImageModel) Get(id int) (Image, error) {
 	}
 
 	query := `
-		SELECT id, created_at, location, year, people, version
+		SELECT id, created_at, location, year, path, people, version
 		FROM images
 		WHERE id = ?`
 
@@ -76,6 +77,7 @@ func (i ImageModel) Get(id int) (Image, error) {
 		&image.CreatedAt,
 		&image.Location,
 		&image.Year,
+		&image.Path,
 		&peopleJSON,
 		&image.Version)
 
@@ -100,7 +102,7 @@ func (i ImageModel) Get(id int) (Image, error) {
 func (i ImageModel) Update(image Image) (Image, error) {
 	query := `
 		UPDATE images
-		SET location = ?, year = ?, people = ?, version = version + 1
+		SET location = ?, year = ?, path = ?, people = ?, version = version + 1
 		WHERE id = ? AND version = ?
 		RETURNING version`
 
@@ -112,6 +114,7 @@ func (i ImageModel) Update(image Image) (Image, error) {
 	args := []any{
 		image.Location,
 		image.Year,
+		image.Path,
 		string(people),
 		image.ID,
 		image.Version,
@@ -181,6 +184,7 @@ func (i ImageModel) GetAll(location string, people []string, filters Filters) ([
 		i.created_at, 
 		i.location, 
 		i.year, 
+		i.path,
 		i.people, 
 		i.version
 	FROM images AS i
@@ -236,6 +240,7 @@ func (i ImageModel) GetAll(location string, people []string, filters Filters) ([
 			&image.CreatedAt,
 			&image.Location,
 			&image.Year,
+			&image.Path,
 			&peopleJSON,
 			&image.Version,
 		)
@@ -269,6 +274,7 @@ func (i ImageModel) Latest() ([]Image, Metadata, error) {
 			i.created_at, 
 			i.location, 
 			i.year, 
+			i.path,
 			i.people, 
 			i.version
 		FROM images AS i
@@ -298,6 +304,7 @@ func (i ImageModel) Latest() ([]Image, Metadata, error) {
 			&image.CreatedAt,
 			&image.Location,
 			&image.Year,
+			&image.Path,
 			&peopleJSON,
 			&image.Version,
 		)
