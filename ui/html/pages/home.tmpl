@@ -6,12 +6,14 @@
   <table>
     <tr>
       <th>location</th>
+      <th>year</th>
       <th>created</th>
       <th>id</th>
     </tr>
     {{range .Images}}
     <tr>
       <td><a href='/images/{{.ID}}'>{{.Location}}</a></td>
+      <td>{{.Year}}</td>
       <td>{{.CreatedAt}}</td>
       <td>#{{.ID}}</td>
     </tr>

@@ -9,7 +9,8 @@
     </div>
     <pre><code>{{.People}}</code></pre>
     <div class='metadata'>
-      <time>Created: {{.CreatedAt}}</time>
+      <time>year: {{.Year}}</time>
+      <time>created: {{.CreatedAt}}</time>
     </div>
     <form action="/images/{{.ID}}/delete" method="POST">
       <button type="submit">delete?</button>
