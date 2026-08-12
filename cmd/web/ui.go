@@ -87,6 +87,28 @@ func (app *application) imageView(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "view.tmpl", data)
 }
 
+//------------------------------------------------------------------------------
+func (app *application) imageFile(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	image,err := app.models.Images.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	app.logger.Info("serving", "path", image.Path)
+	http.ServeFile(w, r, fmt.Sprintf("./data/images/%s", image.Path))
+}
+
 // ------------------------------------------------------------------------------
 func (app *application) imageStore(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)

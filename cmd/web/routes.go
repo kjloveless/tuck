@@ -37,6 +37,7 @@ func (app *application) routes() http.Handler {
 
 	router.Handler(http.MethodGet, "/", dynamic.ThenFunc(app.home))
 	router.Handler(http.MethodGet, "/images/:id", dynamic.ThenFunc(app.imageView))
+	router.Handler(http.MethodGet, "/images/:id/file", dynamic.ThenFunc(app.imageFile))
 	router.Handler(http.MethodGet, "/image/store", dynamic.ThenFunc(app.imageStore))
 	router.Handler(http.MethodPost, "/image/store", dynamic.ThenFunc(app.imageStorePost))
 	router.Handler(http.MethodPost, "/images/:id/delete", dynamic.ThenFunc(app.imageDelete))
