@@ -18,6 +18,7 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/pairings", app.createPairingHandler)
 
 	router.HandlerFunc(http.MethodGet, "/v1/images", app.requirePermission("images:read", app.listImagesHandler))
 	router.HandlerFunc(http.MethodPost, "/v1/images", app.requirePermission("images:write", app.storeImageHandler))
@@ -48,10 +49,9 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodPost, "/user/login", dynamic.ThenFunc(app.userLoginPost))
 	router.Handler(http.MethodPost, "/user/logout", dynamic.ThenFunc(app.userLogoutPost))
 
-	standard := alice.New(app.metrics, app.recoverPanic, app.enableCORS, app.rateLimit)
+	standard := alice.New(app.metrics, app.recoverPanic, app.enableCORS, app.rateLimit, app.authenticate)
 
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 
 	return standard.Then(router)
-	//return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router)))))
 }

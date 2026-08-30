@@ -7,4 +7,5 @@ bin/
 vendor/
 tls/
 data/images/
+data/identity/
 tmp/

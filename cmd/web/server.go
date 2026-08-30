@@ -17,92 +17,99 @@ import (
 
 func (app *application) serve() error {
 	tlsConfig := &tls.Config{
+		MinVersion:       tls.VersionTLS12,
 		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+		Certificates: []tls.Certificate{
+			app.identity.TLSCertificate(),
+		},
 	}
 
 	httpsServer := &http.Server{
-		Addr:         fmt.Sprintf(":%d", app.config.port),
-		Handler:      app.routes(),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		ErrorLog:     slog.NewLogLogger(app.logger.Handler(), slog.LevelError),
-		TLSConfig:    tlsConfig,
+		Addr:              fmt.Sprintf(":%d", app.config.port),
+		Handler:           app.routes(),
+		IdleTimeout:       time.Minute,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Minute,
+		WriteTimeout:      10 * time.Minute,
+		ErrorLog:          slog.NewLogLogger(app.logger.Handler(), slog.LevelError),
+		TLSConfig:         tlsConfig,
 	}
-
 	httpServer := &http.Server{
-		Addr: 				fmt.Sprintf(":%d", app.config.port - 1),
-		Handler:			app.redirectToHTTPS(),
-		IdleTimeout:	time.Minute,
-		ReadTimeout:	5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		ErrorLog:			slog.NewLogLogger(app.logger.Handler(), slog.LevelError),
+		Addr:              fmt.Sprintf(":%d", app.config.port-1),
+		Handler:           app.cleartextRoutes(),
+		IdleTimeout:       time.Minute,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		ErrorLog:          slog.NewLogLogger(app.logger.Handler(), slog.LevelError),
 	}
 
-	shutdownError := make(chan error, 1)
-	serverError		:= make(chan error, 2)
+	serverError := make(chan error, 2)
 
 	go func() {
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-		s := <-quit
+		app.logger.Info("HTTP redirector and local pairing page listening", "addr", httpServer.Addr)
+		if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			serverError <- fmt.Errorf("HTTP server: %w", err)
+		}
+	}()
 
-		app.logger.Info("tucking in", 
-			"https_addr", httpsServer.Addr, 
-			"http_addr", httpServer.Addr,
-			"signal", s.String(),
+	go func() {
+		app.logger.Info(
+			"waking tuck",
+			"addr", httpsServer.Addr,
+			"advertise_url", app.config.advertiseURL,
+			"env", app.config.env,
+			"pairing_url", fmt.Sprintf("http://localhost:%d/pair", app.config.port-1),
+			"server_id", app.identity.ServerID(),
 		)
-
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		if err := httpServer.Shutdown(ctx); err != nil {
-			shutdownError <- err
-			return
-		}
-
-		if err := httpsServer.Shutdown(ctx); err != nil {
-			shutdownError <- err
-			return
-		}
-
-		app.logger.Info("completing background tasks..")
-
-		app.wg.Wait()
-		shutdownError <- nil
-	}()
-
-	go func() {
-		app.logger.Info("HTTP redirector listening", "addr", httpServer.Addr)
-
-		err := httpServer.ListenAndServe()
-		if !errors.Is(err, http.ErrServerClosed) {
-			serverError <- err
+		if err := httpsServer.ListenAndServeTLS("", ""); !errors.Is(err, http.ErrServerClosed) {
+			serverError <- fmt.Errorf("HTTPS server: %w", err)
 		}
 	}()
 
-	app.logger.Info("waking tuck", "addr", httpsServer.Addr, "env", app.config.env)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(quit)
 
-	err := httpsServer.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
-	if !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
-
+	var serveErr error
 	select {
-	case err = <-serverError:
-		return err
-
-	case err = <- shutdownError:
-		if err != nil {
-			return err
-		}
+	case serveErr = <-serverError:
+		app.logger.Error("server stopped unexpectedly", "error", serveErr)
+	case s := <-quit:
+		app.logger.Info("tucking in", "signal", s.String())
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	shutdownErr := errors.Join(httpServer.Shutdown(ctx), httpsServer.Shutdown(ctx))
+
+	app.logger.Info("completing background tasks")
+	app.wg.Wait()
+
+	if serveErr != nil {
+		return errors.Join(serveErr, shutdownErr)
+	}
+	if shutdownErr != nil {
+		return shutdownErr
+	}
 	app.logger.Info("tucked in!")
 	return nil
 }
 
-//------------------------------------------------------------------------------
+func defaultAdvertiseURL(port int) string {
+	addresses, err := net.InterfaceAddrs()
+	if err == nil {
+		for _, address := range addresses {
+			ip, _, err := net.ParseCIDR(address.String())
+			if err == nil && ip.To4() != nil && ip.IsPrivate() && !ip.IsLoopback() {
+				return "https://" + net.JoinHostPort(ip.String(), strconv.Itoa(port))
+			}
+		}
+	}
+	return "https://" + net.JoinHostPort("localhost", strconv.Itoa(port))
+}
+
+// ------------------------------------------------------------------------------
 func (app *application) redirectToHTTPS() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"tuck.loveless.dev/internal/data"
+	"tuck.loveless.dev/internal/identity"
 	"tuck.loveless.dev/internal/mailer"
 	"tuck.loveless.dev/internal/vcs"
 
@@ -34,9 +35,11 @@ var (
 // etc...). we ill read in these configuration settings from command-line flags
 // when the application starts.
 type config struct {
-	port int
-	env  string
-	db   struct {
+	port         int
+	env          string
+	identityDir  string
+	advertiseURL string
+	db           struct {
 		dsn          string
 		maxOpenConns int
 		maxIdleConns int
@@ -65,6 +68,7 @@ type config struct {
 // build progresses.
 type application struct {
 	config         config
+	identity       *identity.Identity
 	logger         *slog.Logger
 	models         data.Models
 	mailer         *mailer.Mailer
@@ -77,6 +81,18 @@ func main() {
 	var cfg config
 
 	flag.IntVar(&cfg.port, "port", 5375, "api server port")
+	flag.StringVar(
+		&cfg.identityDir,
+		"identity-dir",
+		"./data/identity",
+		"persistent TLS identity directory",
+	)
+	flag.StringVar(
+		&cfg.advertiseURL,
+		"advertise-url",
+		"",
+		"phone-reachable HTTPS URL, such as https://192.168.1.42:5375",
+	)
 	flag.StringVar(&cfg.env, "env", "development", "environment (development|staging|production)")
 
 	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "sqlite data source name")
@@ -106,6 +122,9 @@ func main() {
 	if *displayVersion {
 		fmt.Printf("version:\t%s\n", version)
 		os.Exit(0)
+	}
+	if cfg.advertiseURL == "" {
+		cfg.advertiseURL = defaultAdvertiseURL(cfg.port)
 	}
 
 	// initialize a new structured logger which writes log entries to the
@@ -151,10 +170,20 @@ func main() {
 	sessionManager.Lifetime = 12 * time.Hour
 	sessionManager.Cookie.Secure = true
 
+	serverIdentity, err := identity.LoadOrCreate(identity.Options{
+		Directory:    cfg.identityDir,
+		AdvertiseURL: cfg.advertiseURL,
+	})
+	if err != nil {
+		logger.Error("loading server identity", "error", err)
+		os.Exit(1)
+	}
+
 	// declare an instance of the application struct, containing the config
 	// struct, logger, and models
 	app := &application{
 		config:         cfg,
+		identity:       serverIdentity,
 		logger:         logger,
 		models:         data.NewModels(db),
 		mailer:         mailer,

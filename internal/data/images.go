@@ -18,7 +18,7 @@ type Image struct {
 	CreatedAt time.Time `json:"-"`
 	Year      int       `json:"year,omitzero"`
 	Location  string    `json:"location,omitzero"`
-	Path			string		`json:"path,omitzerpath,omitzeroo"`
+	Path      string    `json:"path,omitzerpath,omitzeroo"`
 	People    []string  `json:"people,omitempty"`
 	Version   int       `json:"version"`
 }
@@ -37,6 +37,9 @@ func (i ImageModel) Insert(image Image) (Image, error) {
 		VALUES (?, ?, ?, ?)
 		RETURNING id, created_at, version`
 
+	if image.People == nil {
+		image.People = []string{}
+	}
 	people, err := json.Marshal(image.People)
 	if err != nil {
 		return Image{}, err
@@ -172,6 +175,7 @@ func ValidateImage(v *validator.Validator, image Image) {
 	v.Check(image.Year >= 1888, "year", "must be greater than 1888")
 	v.Check(image.Year <= time.Now().Year(), "year", "must not be in the future")
 
+	v.Check(len(image.People) <= 5, "people", "must not contain more than 5 values")
 	v.Check(validator.Unique(image.People), "people", "must not contain duplicate values")
 }
 

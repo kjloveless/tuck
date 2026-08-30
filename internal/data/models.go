@@ -15,7 +15,9 @@ var (
 // create a models struct which wraps the ImageModel. we'll add other models to
 // this, like a UserModel and PermissionModel
 type Models struct {
+	Devices     DeviceModel
 	Images      ImageModel
+	Pairings    PairingModel
 	Permissions PermissionModel
 	Tokens      TokenModel
 	Users       UserModel
@@ -25,7 +27,9 @@ type Models struct {
 // containing the initialized ImageModel
 func NewModels(db *sql.DB) Models {
 	return Models{
+		Devices:     DeviceModel{DB: db},
 		Images:      ImageModel{DB: db},
+		Pairings:    PairingModel{DB: db},
 		Permissions: PermissionModel{DB: db},
 		Tokens:      TokenModel{DB: db},
 		Users:       UserModel{DB: db},

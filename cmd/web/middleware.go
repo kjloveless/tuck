@@ -120,6 +120,22 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		}
 
 		token := headerParts[1]
+		if data.IsDeviceToken(token) {
+			device, err := app.models.Devices.GetForToken(token)
+			if err != nil {
+				switch {
+				case errors.Is(err, data.ErrRecordNotFound):
+					app.invalidAuthenticationTokenResponse(w, r)
+				default:
+					app.serverErrorResponse(w, r, err)
+				}
+				return
+			}
+
+			r = app.contextSetAuthenticatedDevice(r, device)
+			next.ServeHTTP(w, r)
+			return
+		}
 
 		v := validator.New()
 
@@ -165,6 +181,14 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 
 func (app *application) requirePermission(code string, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, found := app.contextGetAuthenticatedDevice(r); found {
+			switch code {
+			case "images:read", "images:write":
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
 		authenticatedUser, found := app.contextGetAuthenticatedUser(r)
 		if !found {
 			app.authenticationRequiredResponse(w, r)

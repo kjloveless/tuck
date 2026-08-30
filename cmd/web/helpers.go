@@ -221,7 +221,7 @@ func (app *application) newTemplateData(r *http.Request) templateData {
 	}
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 func sniff(fh *multipart.FileHeader) (string, error) {
 	f, err := fh.Open()
 	if err != nil {
@@ -236,22 +236,28 @@ func sniff(fh *multipart.FileHeader) (string, error) {
 	}
 
 	ext, ok := allowedImageTypes[http.DetectContentType(head[:n])]
+	if !ok && n >= 12 && string(head[4:8]) == "ftyp" {
+		switch string(head[8:12]) {
+		case "heic", "heix", "hevc", "hevx", "mif1", "msf1":
+			ext, ok = ".heic", true
+		}
+	}
 	if !ok {
 		return "", errors.New("unsupported content type")
 	}
 	return ext, nil
 }
 
-//------------------------------------------------------------------------------
-func (app application) tmpDir() string {
+// ------------------------------------------------------------------------------
+func (app *application) tmpDir() string {
 	return "./tmp/"
 }
 
-func (app application) dataDir() string {
+func (app *application) dataDir() string {
 	return "./data/images/"
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 func (app *application) storeBlob(c candidate) (string, error) {
 	f, err := c.fh.Open()
 	if err != nil {
@@ -259,6 +265,9 @@ func (app *application) storeBlob(c candidate) (string, error) {
 	}
 	defer f.Close()
 
+	if err := os.MkdirAll(app.tmpDir(), 0o700); err != nil {
+		return "", err
+	}
 	tmp, err := os.CreateTemp(app.tmpDir(), "up-*")
 	if err != nil {
 		return "", err
@@ -295,7 +304,7 @@ func (app *application) storeBlob(c candidate) (string, error) {
 	return rel, nil
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 func splitLines(s string) []string {
 	var out []string
 	for _, line := range strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n") {
