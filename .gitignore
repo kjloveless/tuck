@@ -2,7 +2,6 @@ vi
 data/*.db
 data/*.db-wal
 data/*.db-shm
-.envrc
 bin/
 vendor/
 tls/
