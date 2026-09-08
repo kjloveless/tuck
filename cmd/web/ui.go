@@ -14,31 +14,31 @@ import (
 )
 
 const (
-	maxUploadBytes 	= 256 << 20
-	maxImageBytes 	= 32 << 20
-	maxImages				= 20
-	memThreshold		= 10 << 20
+	maxUploadBytes = 256 << 20
+	maxImageBytes  = 32 << 20
+	maxImages      = 20
+	memThreshold   = 10 << 20
 )
 
 var allowedImageTypes = map[string]string{
 	"image/jpeg": ".jpg",
-	"image/png":	".png",
-	"image/webp":	".webp",
-	"image/gif": 	".gif",
+	"image/png":  ".png",
+	"image/webp": ".webp",
+	"image/gif":  ".gif",
 }
 
 type imageStoreForm struct {
 	Location    string
-	YearRaw			string
+	YearRaw     string
 	Year        int
-	PeopleRaw		string
+	PeopleRaw   string
 	People      []string
 	FieldErrors map[string]string
 }
 
 type candidate struct {
-	fh 	*multipart.FileHeader
-	ext	string
+	fh  *multipart.FileHeader
+	ext string
 }
 
 type userSignupForm struct {
@@ -87,7 +87,7 @@ func (app *application) imageView(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "view.tmpl", data)
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 func (app *application) imageFile(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
@@ -95,7 +95,7 @@ func (app *application) imageFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	image,err := app.models.Images.Get(id)
+	image, err := app.models.Images.Get(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
@@ -121,8 +121,8 @@ func (app *application) imageStore(w http.ResponseWriter, r *http.Request) {
 func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes)
 
-	form := imageStoreForm{ FieldErrors: map[string]string{} }
-	
+	form := imageStoreForm{FieldErrors: map[string]string{}}
+
 	if err := r.ParseMultipartForm(memThreshold); err != nil {
 		var maxErr *http.MaxBytesError
 		if errors.As(err, &maxErr) {
@@ -136,10 +136,10 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form.Location 	= r.PostForm.Get("location")
-	form.YearRaw 		= strings.TrimSpace(r.PostForm.Get("year"))
-	form.PeopleRaw	= r.PostForm.Get("people")
-	form.People			= splitLines(form.PeopleRaw)
+	form.Location = r.PostForm.Get("location")
+	form.YearRaw = strings.TrimSpace(r.PostForm.Get("year"))
+	form.PeopleRaw = r.PostForm.Get("people")
+	form.People = splitLines(form.PeopleRaw)
 
 	if strings.TrimSpace(form.Location) == "" {
 		form.FieldErrors["location"] = "this field cannot be blank"
@@ -184,7 +184,7 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 				form.FieldErrors["images"] = fmt.Sprintf("%q is not a supported image", fh.Filename)
 				break
 			}
-			candidates = append(candidates, candidate{ fh: fh, ext: ext })
+			candidates = append(candidates, candidate{fh: fh, ext: ext})
 		}
 	}
 
@@ -206,7 +206,7 @@ func (app *application) imageStorePost(w http.ResponseWriter, r *http.Request) {
 		image := data.Image{
 			Location: form.Location,
 			Year:     form.Year,
-			Path:			p,
+			Path:     p,
 			People:   form.People,
 		}
 

@@ -31,24 +31,24 @@ func (app *application) serve() error {
 	}
 
 	httpServer := &http.Server{
-		Addr: 				fmt.Sprintf(":%d", app.config.port - 1),
-		Handler:			app.redirectToHTTPS(),
-		IdleTimeout:	time.Minute,
-		ReadTimeout:	5 * time.Second,
+		Addr:         fmt.Sprintf(":%d", app.config.port-1),
+		Handler:      app.redirectToHTTPS(),
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		ErrorLog:			slog.NewLogLogger(app.logger.Handler(), slog.LevelError),
+		ErrorLog:     slog.NewLogLogger(app.logger.Handler(), slog.LevelError),
 	}
 
 	shutdownError := make(chan error, 1)
-	serverError		:= make(chan error, 2)
+	serverError := make(chan error, 2)
 
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		s := <-quit
 
-		app.logger.Info("tucking in", 
-			"https_addr", httpsServer.Addr, 
+		app.logger.Info("tucking in",
+			"https_addr", httpsServer.Addr,
 			"http_addr", httpServer.Addr,
 			"signal", s.String(),
 		)
@@ -92,7 +92,7 @@ func (app *application) serve() error {
 	case err = <-serverError:
 		return err
 
-	case err = <- shutdownError:
+	case err = <-shutdownError:
 		if err != nil {
 			return err
 		}
@@ -102,7 +102,7 @@ func (app *application) serve() error {
 	return nil
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 func (app *application) redirectToHTTPS() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host

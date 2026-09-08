@@ -18,7 +18,7 @@ type Image struct {
 	CreatedAt time.Time `json:"-"`
 	Year      int       `json:"year,omitzero"`
 	Location  string    `json:"location,omitzero"`
-	Path			string		`json:"path,omitzerpath,omitzeroo"`
+	Path      string    `json:"path,omitzerpath,omitzeroo"`
 	People    []string  `json:"people,omitempty"`
 	Version   int       `json:"version"`
 }

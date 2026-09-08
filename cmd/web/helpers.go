@@ -221,7 +221,7 @@ func (app *application) newTemplateData(r *http.Request) templateData {
 	}
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 func sniff(fh *multipart.FileHeader) (string, error) {
 	f, err := fh.Open()
 	if err != nil {
@@ -242,7 +242,7 @@ func sniff(fh *multipart.FileHeader) (string, error) {
 	return ext, nil
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 func (app application) tmpDir() string {
 	return "./tmp/"
 }
@@ -251,7 +251,7 @@ func (app application) dataDir() string {
 	return "./data/images/"
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 func (app *application) storeBlob(c candidate) (string, error) {
 	f, err := c.fh.Open()
 	if err != nil {
@@ -295,7 +295,7 @@ func (app *application) storeBlob(c candidate) (string, error) {
 	return rel, nil
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 func splitLines(s string) []string {
 	var out []string
 	for _, line := range strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n") {

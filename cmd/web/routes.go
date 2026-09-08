@@ -48,10 +48,9 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodPost, "/user/login", dynamic.ThenFunc(app.userLoginPost))
 	router.Handler(http.MethodPost, "/user/logout", dynamic.ThenFunc(app.userLogoutPost))
 
-	standard := alice.New(app.metrics, app.recoverPanic, app.enableCORS, app.rateLimit)
+	standard := alice.New(app.metrics, app.recoverPanic, app.enableCORS, app.rateLimit, app.authenticate)
 
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 
 	return standard.Then(router)
-	//return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router)))))
 }
