@@ -31,25 +31,14 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		return
 	}
 
-	user, err := app.models.Users.GetByEmail(input.Email)
+	user, err := app.models.Users.Authenticate(input.Email, input.Password)
 	if err != nil {
 		switch {
-		case errors.Is(err, data.ErrRecordNotFound):
+		case errors.Is(err, data.ErrInvalidCredentials):
 			app.invalidCredentialsResponse(w, r)
 		default:
 			app.serverErrorResponse(w, r, err)
 		}
-		return
-	}
-
-	match, err := user.Password.Matches(input.Password)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
-	}
-
-	if !match {
-		app.invalidCredentialsResponse(w, r)
 		return
 	}
 

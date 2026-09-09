@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"tuck.loveless.dev/internal/data"
+	"tuck.loveless.dev/internal/validator"
 )
 
 const (
@@ -34,6 +35,12 @@ type imageStoreForm struct {
 	PeopleRaw   string
 	People      []string
 	FieldErrors map[string]string
+}
+
+type userLoginForm struct {
+	Email				string
+	FieldErrors map[string]string
+	Error				string
 }
 
 type candidate struct {
@@ -259,15 +266,74 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "display a form for loggging in a user...")
+	data := app.newTemplateData(r)
+	data.Form = userLoginForm{}
+
+	app.render(w, r, http.StatusOK, "login.tmpl", data)
 }
 
 // ------------------------------------------------------------------------------
 func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "authenticate and login the user...")
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes)
+	if err := r.ParseForm(); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	form := userLoginForm{
+		Email: strings.TrimSpace(r.PostForm.Get("email")),
+	}
+	password := r.PostForm.Get("password")
+
+	v := validator.New()
+	data.ValidateEmail(v, form.Email)
+	data.ValidatePasswordPlaintext(v, password)
+
+	if !v.Valid() {
+		form.FieldErrors = v.Errors
+		td := app.newTemplateData(r)
+		td.Form = form
+		app.render(w, r, http.StatusUnprocessableEntity, "login.tmpl", td)
+		return
+	}
+
+	user, err := app.models.Users.Authenticate(form.Email, password)
+	if err != nil {
+		if errors.Is(err, data.ErrInvalidCredentials) {
+			form.Error = "invalid email or password"
+			td := app.newTemplateData(r)
+			td.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "login.tmpl", td)
+		} else {
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// gallery requires an activated account
+	if !user.Activated {
+		form.Error = "activate your account before logging in"
+		td := app.newTemplateData(r)
+		td.Form = form
+		app.render(w, r, http.StatusForbidden, "login.tmpl", td)
+		return
+	}
+
+	if err := app.sessionManager.RenewToken(r.Context()); err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "authenticatedUserID", user.ID)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // ------------------------------------------------------------------------------
 func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "logout the user...")
+	if err := app.sessionManager.Destroy(r.Context()); err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

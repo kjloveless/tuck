@@ -14,6 +14,7 @@ import (
 
 var (
 	ErrDuplicateEmail = errors.New("duplicate email")
+	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
 type User struct {
@@ -111,6 +112,26 @@ func (m UserModel) Insert(user *User) error {
 	return nil
 }
 
+func (m UserModel) Authenticate(email, plaintextPassword string) (*User, error) {
+	user, err := m.GetByEmail(email)
+	if err != nil {
+		if errors.Is(err, ErrRecordNotFound) {
+			return nil, ErrInvalidCredentials
+		}
+		return nil, err
+	}
+
+	match, err := user.Password.Matches(plaintextPassword)
+	if err != nil {
+		return nil, err
+	}
+	if !match {
+		return nil, ErrInvalidCredentials
+	}
+
+	return user, nil
+}
+
 func (m UserModel) GetByEmail(email string) (*User, error) {
 	query := `
 		SELECT id, created_at, name, email, password_hash, activated, version
@@ -123,6 +144,39 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 	defer cancel()
 
 	err := m.DB.QueryRowContext(ctx, query, email).Scan(
+		&user.ID,
+		&user.CreatedAt,
+		&user.Name,
+		&user.Email,
+		&user.Password.hash,
+		&user.Activated,
+		&user.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
+}
+
+func (m UserModel) GetByID(id int) (*User, error) {
+	query := `
+		SELECT id, created_at, name, email, password_hash, activated, version
+		FROM users
+		WHERE id =?1`
+
+	var user User
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(
 		&user.ID,
 		&user.CreatedAt,
 		&user.Name,

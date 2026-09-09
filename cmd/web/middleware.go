@@ -102,7 +102,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	})
 }
 
-func (app *application) authenticate(next http.Handler) http.Handler {
+func (app *application) authenticateToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Authorization")
 
@@ -140,6 +140,43 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		}
 
 		r = app.contextSetAuthenticatedUser(r, user)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// authenticateSession identifies the user, but does not require login.
+// LoadAndSave must run before this middleware
+func (app *application) authenticateSession(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// successful login must Put(r.Context(), "authenticatedUserID, user.ID")
+		userId := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+		if userId == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		user, err := app.models.Users.GetByID(userId)
+		if err != nil {
+			if errors.Is(err, data.ErrRecordNotFound) {
+				app.sessionManager.Remove(r.Context(), "authenticatedUserID")
+				next.ServeHTTP(w, r)
+			} else {
+				app.serverErrorResponse(w, r, err)
+			}
+			return
+		}
+
+		r = app.contextSetAuthenticatedUser(r, user)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) requireSession(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, found := app.contextGetAuthenticatedUser(r); !found {
+			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+			return
+		}
 
 		next.ServeHTTP(w, r)
 	})

@@ -1,0 +1,30 @@
+{{define "title"}}login{{end}}
+
+{{define "main"}}
+
+<form action='/user/login' method='POST' novalidate>
+  {{ with .Form.Error }}
+    <p class='error'>{{.}}</p>
+  {{ end }}
+  <div>
+    <label for='email'>email:</label>
+    {{ with .Form.FieldErrors.email }}
+      <p class='error'>{{.}}</p>
+    {{ end }}
+    <input type='email' id='email' name='email' 
+      value='{{ .Form.Email }}' autocomplete='username'>
+  </div>
+  <div>
+    <label for='password'>password:</label>
+    {{ with .Form.FieldErrors.password }}
+      <p class='error'>{{.}}</p>
+    {{ end }}
+    <input type='password' id='password' name='password' 
+      autocomplete='current-password'>
+  </div>
+  <div>
+    <input type='submit' value='login'>
+  </div>
+</form>
+
+{{end}}
