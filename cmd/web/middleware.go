@@ -166,7 +166,14 @@ func (app *application) authenticateSession(next http.Handler) http.Handler {
 			return
 		}
 
+		permissions, err := app.models.Permissions.GetAllForUser(user.ID)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
 		r = app.contextSetAuthenticatedUser(r, user)
+		r = app.contextSetUserPermissions(r, permissions)
 		next.ServeHTTP(w, r)
 	})
 }

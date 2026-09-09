@@ -10,6 +10,8 @@ import (
 
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
+	csrf := http.NewCrossOriginProtection()
+
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
@@ -71,6 +73,7 @@ func (app *application) routes() http.Handler {
 		api.ThenFunc(app.createPasswordResetTokenHandler))
 
 	dynamic := alice.New(
+		csrf.Handler,
 		app.sessionManager.LoadAndSave,
 		app.authenticateSession,
 	)

@@ -215,7 +215,14 @@ func (app *application) render(
 
 // /-----------------------------------------------------------------------------
 func (app *application) newTemplateData(r *http.Request) templateData {
+	user, _ := app.contextGetAuthenticatedUser(r)
+	permissions := app.contextGetUserPermissions(r)
+
 	return templateData{
+		CurrentUser:		user,
+		CanWriteImages:	user != nil &&
+			user.Activated &&
+			permissions.Include("images:write"),
 		CurrentYear: time.Now().Year(),
 		Flash:       app.sessionManager.PopString(r.Context(), "flash"),
 	}

@@ -13,9 +13,11 @@
       <time>year: {{.Year}}</time>
       <time>created: {{.CreatedAt}}</time>
     </div>
+    {{ if $.CanWriteImages }}
     <form action="/images/{{.ID}}/delete" method="POST">
       <button type="submit">delete?</button>
     </form>
+    {{ end }}
   </div>
   {{end}}
 {{end}}

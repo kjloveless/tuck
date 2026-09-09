@@ -274,7 +274,7 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes)
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 	if err := r.ParseForm(); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
