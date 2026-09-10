@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"tuck.loveless.dev/internal/data"
-	"tuck.loveless.dev/internal/mailer"
 	"tuck.loveless.dev/internal/vcs"
 
 	"github.com/alexedwards/scs/v2"
@@ -67,7 +66,6 @@ type application struct {
 	config         config
 	logger         *slog.Logger
 	models         data.Models
-	mailer         *mailer.Mailer
 	sessionManager *scs.SessionManager
 	templateCache  map[string]*template.Template
 	wg             sync.WaitGroup
@@ -127,12 +125,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	mailer, err := mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender)
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
-	}
-
 	expvar.NewString("version").Set(version)
 
 	expvar.Publish("goroutines", expvar.Func(func() any {
@@ -157,7 +149,6 @@ func main() {
 		config:         cfg,
 		logger:         logger,
 		models:         data.NewModels(db),
-		mailer:         mailer,
 		sessionManager: sessionManager,
 		templateCache:  templateCache,
 	}

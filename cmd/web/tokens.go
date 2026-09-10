@@ -90,22 +90,11 @@ func (app *application) createPasswordResetTokenHandler(w http.ResponseWriter, r
 		return
 	}
 
-	token, err := app.models.Tokens.New(user.ID, 45*time.Minute, data.ScopePasswordReset)
+	_, err = app.models.Tokens.New(user.ID, 45*time.Minute, data.ScopePasswordReset)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-
-	app.background(func() {
-		data := map[string]any{
-			"passwordResetToken": token.Plaintext,
-		}
-
-		err := app.mailer.Send(user.Email, "token_password_reset.tmpl", data)
-		if err != nil {
-			app.logger.Error(err.Error())
-		}
-	})
 
 	env := envelope{"message": "an email will be set to you containing password reset instructions"}
 
@@ -152,22 +141,11 @@ func (app *application) createActivationTokenHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
+	_, err = app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-
-	app.background(func() {
-		data := map[string]any{
-			"activationToken": token.Plaintext,
-		}
-
-		err := app.mailer.Send(user.Email, "token_activation.tmpl", data)
-		if err != nil {
-			app.logger.Error(err.Error())
-		}
-	})
 
 	env := envelope{"message": "an email will be sent to you containing activation instructions"}
 
