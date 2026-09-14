@@ -38,7 +38,7 @@ type imageStoreForm struct {
 }
 
 type userLoginForm struct {
-	Email				string
+	Username		string
 	FieldErrors map[string]string
 	Error				string
 }
@@ -49,8 +49,7 @@ type candidate struct {
 }
 
 type userSignupForm struct {
-	Name        string `form:"name"`
-	Email       string `form:"email"`
+	Username    string `form:"username"`
 	Password    string `form:"password"`
 	FieldErrors map[string]string
 }
@@ -112,7 +111,6 @@ func (app *application) imageFile(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	app.logger.Info("serving", "path", image.Path)
 	http.ServeFile(w, r, fmt.Sprintf("./data/images/%s", image.Path))
 }
 
@@ -281,12 +279,12 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form := userLoginForm{
-		Email: strings.TrimSpace(r.PostForm.Get("email")),
+		Username: strings.TrimSpace(r.PostForm.Get("username")),
 	}
 	password := r.PostForm.Get("password")
 
 	v := validator.New()
-	data.ValidateEmail(v, form.Email)
+	data.ValidateUsername(v, form.Username)
 	data.ValidatePasswordPlaintext(v, password)
 
 	if !v.Valid() {
@@ -297,10 +295,10 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := app.models.Users.Authenticate(form.Email, password)
+	user, err := app.models.Users.Authenticate(form.Username, password)
 	if err != nil {
 		if errors.Is(err, data.ErrInvalidCredentials) {
-			form.Error = "invalid email or password"
+			form.Error = "invalid username or password"
 			td := app.newTemplateData(r)
 			td.Form = form
 			app.render(w, r, http.StatusUnprocessableEntity, "login.tmpl", td)

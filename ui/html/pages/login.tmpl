@@ -7,12 +7,12 @@
     <p class='error'>{{.}}</p>
   {{ end }}
   <div>
-    <label for='email'>email:</label>
-    {{ with .Form.FieldErrors.email }}
+    <label for='username'>username:</label>
+    {{ with .Form.FieldErrors.username }}
       <p class='error'>{{.}}</p>
     {{ end }}
-    <input type='email' id='email' name='email' 
-      value='{{ .Form.Email }}' autocomplete='username'>
+    <input type='text' id='username' name='username' 
+      value='{{ .Form.Username }}' autocomplete='username'>
   </div>
   <div>
     <label for='password'>password:</label>

@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	ErrDuplicateEmail = errors.New("duplicate email")
+	ErrDuplicateUsername 	= errors.New("duplicate username")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
@@ -21,7 +21,7 @@ type User struct {
 	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	Name      string    `json:"name"`
-	Email     string    `json:"email"`
+	Username  string    `json:"username"`
 	Password  password  `json:"-"`
 	Activated bool      `json:"activated"`
 	Version   int       `json:"-"`
@@ -58,9 +58,9 @@ func (p *password) Matches(plaintextPassword string) (bool, error) {
 	return true, nil
 }
 
-func ValidateEmail(v *validator.Validator, email string) {
-	v.Check(email != "", "email", "must be provided")
-	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
+func ValidateUsername(v *validator.Validator, username string) {
+	v.Check(username != "", "username", "must be provided")
+	v.Check(validator.Matches(username, validator.UsernameRX), "username", "must be a valid username")
 }
 
 func ValidatePasswordPlaintext(v *validator.Validator, password string) {
@@ -70,10 +70,7 @@ func ValidatePasswordPlaintext(v *validator.Validator, password string) {
 }
 
 func ValidateUser(v *validator.Validator, user *User) {
-	v.Check(user.Name != "", "name", "must be provided")
-	v.Check(len(user.Name) <= 500, "name", "must not be more than 500 bytes long")
-
-	ValidateEmail(v, user.Email)
+	ValidateUsername(v, user.Username)
 
 	if user.Password.plaintext != nil {
 		ValidatePasswordPlaintext(v, *user.Password.plaintext)
@@ -90,11 +87,11 @@ type UserModel struct {
 
 func (m UserModel) Insert(user *User) error {
 	query := `
-		INSERT INTO users (name, email, password_hash, activated)
-		VALUES (?1, ?2, ?3, ?4)
+		INSERT INTO users (username, password_hash, activated)
+		VALUES (?1, ?2, ?3)
 		RETURNING id, created_at, version`
 
-	args := []any{user.Name, user.Email, user.Password.hash, user.Activated}
+	args := []any{user.Username, user.Password.hash, user.Activated}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -102,8 +99,8 @@ func (m UserModel) Insert(user *User) error {
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 	if err != nil {
 		switch {
-		case err.Error() == `constraint failed: UNIQUE constraint failed: users.email (2067)`:
-			return ErrDuplicateEmail
+		case err.Error() == `constraint failed: UNIQUE constraint failed: users.username (2067)`:
+			return ErrDuplicateUsername
 		default:
 			return err
 		}
@@ -112,8 +109,8 @@ func (m UserModel) Insert(user *User) error {
 	return nil
 }
 
-func (m UserModel) Authenticate(email, plaintextPassword string) (*User, error) {
-	user, err := m.GetByEmail(email)
+func (m UserModel) Authenticate(username, plaintextPassword string) (*User, error) {
+	user, err := m.GetByUsername(username)
 	if err != nil {
 		if errors.Is(err, ErrRecordNotFound) {
 			return nil, ErrInvalidCredentials
@@ -132,22 +129,21 @@ func (m UserModel) Authenticate(email, plaintextPassword string) (*User, error) 
 	return user, nil
 }
 
-func (m UserModel) GetByEmail(email string) (*User, error) {
+func (m UserModel) GetByUsername(username string) (*User, error) {
 	query := `
-		SELECT id, created_at, name, email, password_hash, activated, version
+		SELECT id, created_at, username, password_hash, activated, version
 		FROM users
-		WHERE email =?1`
+		WHERE username = ?`
 
 	var user User
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err := m.DB.QueryRowContext(ctx, query, email).Scan(
+	err := m.DB.QueryRowContext(ctx, query, username).Scan(
 		&user.ID,
 		&user.CreatedAt,
-		&user.Name,
-		&user.Email,
+		&user.Username,
 		&user.Password.hash,
 		&user.Activated,
 		&user.Version,
@@ -167,9 +163,9 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 
 func (m UserModel) GetByID(id int) (*User, error) {
 	query := `
-		SELECT id, created_at, name, email, password_hash, activated, version
+		SELECT id, created_at, username, password_hash, activated, version
 		FROM users
-		WHERE id =?1`
+		WHERE id = ?`
 
 	var user User
 
@@ -179,8 +175,7 @@ func (m UserModel) GetByID(id int) (*User, error) {
 	err := m.DB.QueryRowContext(ctx, query, id).Scan(
 		&user.ID,
 		&user.CreatedAt,
-		&user.Name,
-		&user.Email,
+		&user.Username,
 		&user.Password.hash,
 		&user.Activated,
 		&user.Version,
@@ -201,13 +196,12 @@ func (m UserModel) GetByID(id int) (*User, error) {
 func (m UserModel) Update(user *User) error {
 	query := `
 		UPDATE users
-		SET name = ?1, email = ?2, password_hash = ?3, activated = ?4, version = version + 1
-		WHERE id = ?5 AND version = ?6
+		SET username = ?1, password_hash = ?2, activated = ?3, version = version + 1
+		WHERE id = ?4 AND version = ?5
 		RETURNING version`
 
 	args := []any{
-		user.Name,
-		user.Email,
+		user.Username,
 		user.Password.hash,
 		user.Activated,
 		user.ID,
@@ -220,8 +214,8 @@ func (m UserModel) Update(user *User) error {
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.Version)
 	if err != nil {
 		switch {
-		case err.Error() == `constraint failed: UNIQUE constraint failed: users.email (2067)`:
-			return ErrDuplicateEmail
+		case err.Error() == `constraint failed: UNIQUE constraint failed: users.username (2067)`:
+			return ErrDuplicateUsername
 		case errors.Is(err, sql.ErrNoRows):
 			return ErrEditConflict
 		default:
@@ -239,8 +233,7 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 		SELECT 
 			users.id,
 			users.created_at,
-			users.name,
-			users.email,
+			users.username,
 			users.password_hash,
 			users.activated,
 			users.version
@@ -261,8 +254,7 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(
 		&user.ID,
 		&user.CreatedAt,
-		&user.Name,
-		&user.Email,
+		&user.Username,
 		&user.Password.hash,
 		&user.Activated,
 		&user.Version,

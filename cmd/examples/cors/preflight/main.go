@@ -23,7 +23,7 @@ const html = `
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
-					email: 'hector@example.com',
+					username: 'hector',
 					password: 'pa55word'
 				})
 			}).then(

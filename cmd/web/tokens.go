@@ -11,7 +11,7 @@ import (
 
 func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Email    string `json:"email"`
+		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 
@@ -23,7 +23,7 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 
 	v := validator.New()
 
-	data.ValidateEmail(v, input.Email)
+	data.ValidateUsername(v, input.Username)
 	data.ValidatePasswordPlaintext(v, input.Password)
 
 	if !v.Valid() {
@@ -31,7 +31,7 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		return
 	}
 
-	user, err := app.models.Users.Authenticate(input.Email, input.Password)
+	user, err := app.models.Users.Authenticate(input.Username, input.Password)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrInvalidCredentials):
@@ -56,7 +56,7 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 
 func (app *application) createPasswordResetTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Email string `json:"email"`
+		Username string `json:"username"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -67,16 +67,16 @@ func (app *application) createPasswordResetTokenHandler(w http.ResponseWriter, r
 
 	v := validator.New()
 
-	if data.ValidateEmail(v, input.Email); !v.Valid() {
+	if data.ValidateUsername(v, input.Username); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
-	user, err := app.models.Users.GetByEmail(input.Email)
+	user, err := app.models.Users.GetByUsername(input.Username)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
-			v.AddError("email", "no matching email address found")
+			v.AddError("username", "no matching username found")
 			app.failedValidationResponse(w, r, v.Errors)
 		default:
 			app.serverErrorResponse(w, r, err)
@@ -85,7 +85,7 @@ func (app *application) createPasswordResetTokenHandler(w http.ResponseWriter, r
 	}
 
 	if !user.Activated {
-		v.AddError("email", "user account must be activated")
+		v.AddError("username", "user account must be activated")
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
@@ -96,9 +96,7 @@ func (app *application) createPasswordResetTokenHandler(w http.ResponseWriter, r
 		return
 	}
 
-	env := envelope{"message": "an email will be set to you containing password reset instructions"}
-
-	err = app.writeJSON(w, http.StatusAccepted, env, nil)
+	err = app.writeJSON(w, http.StatusAccepted, envelope{}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
@@ -106,7 +104,7 @@ func (app *application) createPasswordResetTokenHandler(w http.ResponseWriter, r
 
 func (app *application) createActivationTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Email string `json:"email"`
+		Username string `json:"username"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -117,16 +115,16 @@ func (app *application) createActivationTokenHandler(w http.ResponseWriter, r *h
 
 	v := validator.New()
 
-	if data.ValidateEmail(v, input.Email); !v.Valid() {
+	if data.ValidateUsername(v, input.Username); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
-	user, err := app.models.Users.GetByEmail(input.Email)
+	user, err := app.models.Users.GetByUsername(input.Username)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
-			v.AddError("email", "no matching email address found")
+			v.AddError("username", "no matching username found")
 			app.failedValidationResponse(w, r, v.Errors)
 		default:
 			app.serverErrorResponse(w, r, err)
@@ -136,7 +134,7 @@ func (app *application) createActivationTokenHandler(w http.ResponseWriter, r *h
 	}
 
 	if user.Activated {
-		v.AddError("email", "user has already been activated")
+		v.AddError("username", "user has already been activated")
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
@@ -147,9 +145,7 @@ func (app *application) createActivationTokenHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	env := envelope{"message": "an email will be sent to you containing activation instructions"}
-
-	err = app.writeJSON(w, http.StatusAccepted, env, nil)
+	err = app.writeJSON(w, http.StatusAccepted, envelope{}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
