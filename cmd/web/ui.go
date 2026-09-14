@@ -259,7 +259,64 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "create a new user...")
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
+	if err := r.ParseForm(); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	form := userSignupForm{
+		Username: strings.TrimSpace(r.PostForm.Get("username")),
+	}
+	password := r.PostForm.Get("password")
+
+	user := &data.User{
+		Username:  form.Username,
+		Activated: true,
+	}
+	if err := user.Password.Set(password); err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+	data.ValidateUser(v, user)
+	if !v.Valid() {
+		form.FieldErrors = v.Errors
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl", data)
+		return
+	}
+
+	if err := app.models.Users.Insert(user); err != nil {
+		switch {
+		case errors.Is(err, data.ErrDuplicateUsername):
+			form.FieldErrors = map[string]string{
+				"username": "a user with this username already exists",
+			}
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl", data)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	if err := app.models.Permissions.AddForUser(user.ID, "images:read", "images:write"); err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	if err := app.sessionManager.RenewToken(r.Context()); err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "authenticatedUserID", user.ID)
+	app.sessionManager.Put(r.Context(), "flash", "welcome to tuck!")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // ------------------------------------------------------------------------------

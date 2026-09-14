@@ -3,21 +3,21 @@
 {{define "main"}}
 <form action='/user/signup' method='POST' novalidate>
   <div>
-    <label>username:</label>
+    <label for='username'>username:</label>
     {{with .Form.FieldErrors.username}}
       <label class='error'>{{.}}</label>
     {{end}}
-    <input type='text' name='username' value='{{.Form.Username}}'>
+    <input type='text' id='username' name='username' value='{{.Form.Username}}' autocomplete='username'>
   </div>
   <div>
-    <label>password:</label>
+    <label for='password'>password:</label>
     {{with .Form.FieldErrors.password}}
       <label class='error'>{{.}}</label>
     {{end}}
-    <input type='password' name='password'>
+    <input type='password' id='password' name='password' autocomplete='new-password'>
   </div>
   <div>
-    <input type='submit' value='signup'>`
+    <input type='submit' value='signup'>
   </div>
 </form>
 {{end}}
